@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Filter, Save, AlertCircle } from 'lucide-react';
 import { Customer, Transaction, CustomerStats, calculateDailyCost, AppSettings } from '../types';
-import { getCustomers, getTransactionsByDate, saveTransaction, getCustomerStats, getSettings } from '../services/db';
+import { getCustomers, getTransactions, saveTransaction } from '../services/db';
 
 const SupplySheet: React.FC = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -26,20 +26,20 @@ const SupplySheet: React.FC = () => {
     loadData();
   }, [date]);
 
-  const loadData = () => {
-    // Load Settings
-    setSettings(getSettings());
-
+  const loadData = async () => {
     // 1. Load Customers
-    const loadedCustomers = getCustomers();
+    const loadedCustomers = await getCustomers();
     setCustomers(loadedCustomers);
     
     // 2. Load Transactions for Date
-    const txs = getTransactionsByDate(date);
+    const allTransactions = await getTransactions();
+    const txs = allTransactions.filter(t => t.date?.startsWith(date));
     const txMap: Record<string, Transaction> = {};
     
     txs.forEach(t => {
-      txMap[t.customerId] = { ...t };
+      if (t.customer_id) {
+        txMap[t.customer_id] = { ...t };
+      }
     });
     
     setTransactions(JSON.parse(JSON.stringify(txMap))); // Deep copy for editing
@@ -47,9 +47,6 @@ const SupplySheet: React.FC = () => {
 
     // 3. Load Base Stats (Snapshot before current day's edit)
     const newStats: Record<string, CustomerStats> = {};
-    loadedCustomers.forEach(c => {
-      newStats[c.id] = getCustomerStats(c.id);
-    });
     setBaseStats(newStats);
     setHasUnsavedChanges(false);
   };
@@ -81,14 +78,14 @@ const SupplySheet: React.FC = () => {
     setHasUnsavedChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Save all dirty transactions
-    Object.values(transactions).forEach(tx => {
-      saveTransaction(tx as Transaction);
-    });
+    for (const tx of Object.values(transactions)) {
+      await saveTransaction(tx as Transaction);
+    }
     
     // Reload to refresh stats and sync states
-    loadData();
+    await loadData();
     alert("Supply sheet saved successfully!");
   };
 

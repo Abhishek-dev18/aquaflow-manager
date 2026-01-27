@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Filter, Printer, FileSpreadsheet } from 'lucide-react';
 import { Customer, Transaction, CustomerStats, AppSettings } from '../types';
-import { getCustomers, getTransactionsByDate, getCustomerStats, getSettings } from '../services/db';
+import { getCustomers, getTransactions } from '../services/db';
 
 const SupplyChart: React.FC = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -18,22 +18,23 @@ const SupplyChart: React.FC = () => {
   });
 
   useEffect(() => {
-    setSettings(getSettings());
-    const loadedCustomers = getCustomers();
-    setCustomers(loadedCustomers);
-    
-    const txs = getTransactionsByDate(date);
-    const txMap: Record<string, Transaction> = {};
-    txs.forEach(t => {
-      txMap[t.customerId] = t;
-    });
-    setTransactions(txMap);
+    const loadData = async () => {
+      const loadedCustomers = await getCustomers();
+      setCustomers(loadedCustomers);
+      
+      const allTxs = await getTransactions();
+      const txs = allTxs.filter(t => t.date?.startsWith(date));
+      const txMap: Record<string, Transaction> = {};
+      txs.forEach(t => {
+        if (t.customer_id) {
+          txMap[t.customer_id] = t;
+        }
+      });
+      setTransactions(txMap);
 
-    const newStats: Record<string, CustomerStats> = {};
-    loadedCustomers.forEach(c => {
-      newStats[c.id] = getCustomerStats(c.id);
-    });
-    setStats(newStats);
+      setStats({});
+    };
+    loadData();
   }, [date]);
 
   const areas = useMemo(() => Array.from(new Set(customers.map(c => c.area))).sort(), [customers]);

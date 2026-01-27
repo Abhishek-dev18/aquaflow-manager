@@ -17,23 +17,28 @@ const PaymentCollection: React.FC = () => {
 
   // Load Initial Data
   useEffect(() => {
-    setCustomers(getCustomers());
-    setAreas(['All', ...getAreas().map(a => a.name)]);
-    loadRecentPayments();
+    const loadData = async () => {
+      const custList = await getCustomers();
+      setCustomers(custList);
+      setAreas(['All']);
+      await loadRecentPayments(custList);
+    };
+    loadData();
   }, []);
 
-  const loadRecentPayments = () => {
-    const allTxs = getTransactions();
-    const custMap = Object.fromEntries(getCustomers().map(c => [c.id, c]));
+  const loadRecentPayments = async (custList?: Customer[]) => {
+    const allTxs = await getTransactions();
+    const customers = custList || await getCustomers();
+    const custMap = Object.fromEntries(customers.map(c => [c.id, c]));
     
     // Get last 5 payments
     const payments = allTxs
-      .filter(t => t.paymentAmount > 0)
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .filter(t => (t.amount || 0) > 0)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
       .slice(0, 5)
       .map(t => ({
         ...t,
-        customerName: custMap[t.customerId]?.name || 'Unknown'
+        customerName: custMap[t.customer_id]?.name || 'Unknown'
       }));
     
     setRecentPayments(payments);
@@ -49,7 +54,7 @@ const PaymentCollection: React.FC = () => {
     });
   }, [customers, searchTerm, filterArea]);
 
-  const handleCollectPayment = (e: React.FormEvent) => {
+  const handleCollectPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer || !paymentAmount) return;
 
@@ -60,22 +65,24 @@ const PaymentCollection: React.FC = () => {
     }
 
     // Existing transaction on same date?
-    const existingTxs = getTransactions().find(t => t.customerId === selectedCustomer.id && t.date === paymentDate);
+    const allTxs = await getTransactions();
+    const existingTxs = allTxs.find(t => t.customer_id === selectedCustomer.id && t.date === paymentDate);
 
-    const payload: Partial<Transaction> & { customerId: string; date: string } = {
-      customerId: selectedCustomer.id,
+    const payload: Partial<Transaction> & { customer_id: string; date: string } = {
+      customer_id: selectedCustomer.id,
       date: paymentDate,
-      paymentAmount: (existingTxs?.paymentAmount || 0) + amount
+      amount: (existingTxs?.amount || 0) + amount
     };
 
-    saveTransaction(payload);
+    await saveTransaction(payload);
     
     // Reset and feedback
     setShowSuccess(true);
     setPaymentAmount('');
     setSelectedCustomer(null);
-    loadRecentPayments();
-    setCustomers(getCustomers()); // Refresh balances
+    await loadRecentPayments();
+    const custList = await getCustomers();
+    setCustomers(custList); // Refresh balances
 
     setTimeout(() => setShowSuccess(false), 3000);
   };

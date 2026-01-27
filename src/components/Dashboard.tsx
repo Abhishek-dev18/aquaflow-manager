@@ -21,44 +21,52 @@ const Dashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    const customers = getCustomers();
-    const allStats = getAllCustomerStats();
-    
-    // Calculate Total Due
-    const totalDue = Object.values(allStats).reduce((acc, curr) => acc + curr.totalDue, 0);
-    
-    // Today's Activity
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todaysTx = getTransactionsByDate(todayStr);
-    
-    const jarsToday = todaysTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
-    const thermosToday = todaysTx.reduce((acc, t) => acc + (t.thermosDelivered || 0), 0);
-    const paymentToday = todaysTx.reduce((acc, t) => acc + (t.paymentAmount || 0), 0);
-    
-    // Monthly Activity
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const allTransactions = getTransactions();
-    const monthTx = allTransactions.filter(t => {
-      const d = new Date(t.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    });
+    const loadStats = async () => {
+      const customers = await getCustomers();
+      const allTransactions = await getTransactions();
+      
+      // Calculate Total Due
+      let totalDue = 0;
+      for (const customer of customers) {
+        const customerTxs = allTransactions.filter(t => t.customer_id === customer.id);
+        const paid = customerTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+        totalDue += Math.max(0, (customer.balance || 0) - paid);
+      }
+      
+      // Today's Activity
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todaysTx = allTransactions.filter(t => t.date?.startsWith(todayStr));
+      
+      const jarsToday = todaysTx.reduce((acc, t) => acc + (t.jars_delivered || 0), 0);
+      const thermosToday = todaysTx.reduce((acc, t) => acc + (t.thermos_delivered || 0), 0);
+      const paymentToday = todaysTx.reduce((acc, t) => acc + (t.amount || 0), 0);
+      
+      // Monthly Activity
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const monthTx = allTransactions.filter(t => {
+        const d = new Date(t.date || '');
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
 
-    const jarsMonth = monthTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
-    const thermosMonth = monthTx.reduce((acc, t) => acc + (t.thermosDelivered || 0), 0);
-    const paymentMonth = monthTx.reduce((acc, t) => acc + (t.paymentAmount || 0), 0);
+      const jarsMonth = monthTx.reduce((acc, t) => acc + (t.jars_delivered || 0), 0);
+      const thermosMonth = monthTx.reduce((acc, t) => acc + (t.thermos_delivered || 0), 0);
+      const paymentMonth = monthTx.reduce((acc, t) => acc + (t.amount || 0), 0);
 
-    setStats({
-      totalCustomers: customers.length,
-      totalDue,
-      jarsToday,
-      thermosToday,
-      paymentToday,
-      jarsMonth,
-      thermosMonth,
-      paymentMonth,
-      activeCustomers: customers.length
-    });
+      setStats({
+        totalCustomers: customers.length,
+        totalDue,
+        jarsToday,
+        thermosToday,
+        paymentToday,
+        jarsMonth,
+        thermosMonth,
+        paymentMonth,
+        activeCustomers: customers.length
+      });
+    };
+    
+    loadStats();
   }, []);
 
   const handleGenerateInsight = async () => {
