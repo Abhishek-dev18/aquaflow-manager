@@ -1,66 +1,76 @@
+/**
+ * Admin Login Component
+ * SECURITY: Uses Supabase email/password authentication only.
+ * No signup or public access - admin users are pre-created in Supabase.
+ */
 
-import React, { useState, useEffect } from 'react';
-import { Lock, User, Droplets, ArrowRight } from 'lucide-react';
-import { getSettings } from '../services/db';
+import React, { useState } from 'react';
+import { Lock, Mail, Droplets, ArrowRight } from 'lucide-react';
+import { loginAdmin } from '../lib/supabase';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLoginSuccess: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [companyName, setCompanyName] = useState<string>('OM Pure Water');
 
-  useEffect(() => {
-    const settings = getSettings();
-    setCompanyName(settings.companyName || 'OM Pure Water');
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
-    // Simulate network delay for better UX feel
-    setTimeout(() => {
-        if (username === 'admin' && password === '1234') {
-            onLogin();
-        } else {
-            setError('Invalid username or password');
-            setLoading(false);
-        }
-    }, 600);
+    try {
+      // Validate inputs
+      if (!email.trim() || !password.trim()) {
+        setError('Please enter both email and password');
+        setLoading(false);
+        return;
+      }
+
+      // Attempt Supabase authentication
+      await loginAdmin(email, password);
+      
+      // Success - callback to parent
+      onLoginSuccess();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(errorMessage);
+      console.error('Authentication error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
       
-      {/* 1. Background Gradient */}
+      {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-white to-blue-100 z-0"></div>
       
-      {/* 2. Grid Pattern Overlay */}
+      {/* Grid Pattern Overlay */}
       <div className="absolute inset-0 z-0 opacity-[0.4]" 
            style={{ backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
       </div>
 
-      {/* 3. Animated Blobs (Background) */}
+      {/* Animated Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-200/30 rounded-full blur-3xl animate-pulse mix-blend-multiply"></div>
          <div className="absolute bottom-[-10%] right-[-20%] w-[500px] h-[500px] bg-cyan-200/30 rounded-full blur-3xl animate-pulse delay-1000 mix-blend-multiply"></div>
          <div className="absolute top-[30%] right-[10%] w-72 h-72 bg-purple-200/30 rounded-full blur-3xl animate-bounce delay-700 duration-[4000ms] mix-blend-multiply"></div>
       </div>
 
-      {/* 4. Bottom Wave SVG */}
+      {/* Wave SVG */}
       <div className="absolute bottom-0 left-0 right-0 z-0 text-brand-500/10 pointer-events-none">
          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-auto fill-current">
             <path fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,208C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
          </svg>
       </div>
 
-      {/* 5. Floating Particles */}
+      {/* Floating Particles */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute top-20 left-[20%] w-4 h-4 bg-blue-400/20 rounded-full animate-bounce duration-[3000ms]"></div>
         <div className="absolute bottom-40 left-[10%] w-8 h-8 bg-cyan-400/20 rounded-full animate-bounce delay-700 duration-[5000ms]"></div>
@@ -70,7 +80,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       {/* Login Card */}
       <div className="bg-white/80 backdrop-blur-xl p-8 md:p-10 rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.1)] w-full max-w-md border border-white relative z-10 animate-in fade-in zoom-in duration-500 slide-in-from-bottom-4">
         
-        {/* Card Header with Icon */}
+        {/* Card Header */}
         <div className="text-center mb-8">
            <div className="relative w-24 h-24 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-3xl mx-auto flex items-center justify-center text-white shadow-xl shadow-brand-200 mb-6 transform -rotate-3 hover:rotate-0 transition-transform duration-500 group border-4 border-white ring-4 ring-brand-50">
               <Droplets size={42} className="text-white drop-shadow-md group-hover:scale-110 transition-transform duration-500"/>
@@ -78,30 +88,33 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
               </div>
            </div>
-           <h1 className="text-3xl font-black text-slate-800 tracking-tight">{companyName}</h1>
-           <p className="text-slate-500 font-medium text-sm mt-2">Professional Water Management</p>
+           <h1 className="text-3xl font-black text-slate-800 tracking-tight">OMPure Water</h1>
+           <p className="text-slate-500 font-medium text-sm mt-2">Admin Portal</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
            <div className="space-y-5">
+             {/* Email Field */}
              <div className="group">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 group-focus-within:text-brand-600 transition-colors">Username</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 group-focus-within:text-brand-600 transition-colors">Email Address</label>
                 <div className="relative transition-all duration-300 group-focus-within:transform group-focus-within:-translate-y-1">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-500 transition-colors">
-                    <User size={20} />
+                    <Mail size={20} />
                   </div>
                   <input 
-                    type="text" 
+                    type="email" 
                     required
-                    className="pl-11 w-full rounded-2xl border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white shadow-sm hover:shadow border p-4 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all text-slate-700 font-bold placeholder-slate-400"
-                    placeholder="Enter your username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading}
+                    className="pl-11 w-full rounded-2xl border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white shadow-sm hover:shadow border p-4 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all text-slate-700 font-bold placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="admin@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
              </div>
 
+             {/* Password Field */}
              <div className="group">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1 group-focus-within:text-brand-600 transition-colors">Password</label>
                 <div className="relative transition-all duration-300 group-focus-within:transform group-focus-within:-translate-y-1">
@@ -111,7 +124,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <input 
                     type="password" 
                     required
-                    className="pl-11 w-full rounded-2xl border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white shadow-sm hover:shadow border p-4 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all text-slate-700 font-bold placeholder-slate-400"
+                    disabled={loading}
+                    className="pl-11 w-full rounded-2xl border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white shadow-sm hover:shadow border p-4 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all text-slate-700 font-bold placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -120,13 +134,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
              </div>
            </div>
 
+           {/* Error Message */}
            {error && (
-             <div className="text-red-500 text-sm font-semibold text-center bg-red-50 p-4 rounded-xl border border-red-100 flex items-center justify-center gap-2 animate-shake">
+             <div className="text-red-500 text-sm font-semibold text-center bg-red-50 p-4 rounded-xl border border-red-100 flex items-center justify-center gap-2">
                <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
                {error}
              </div>
            )}
 
+           {/* Submit Button */}
            <button 
              type="submit" 
              disabled={loading}
@@ -135,26 +151,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
              {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Logging in...</span>
+                  <span>Authenticating...</span>
                 </>
              ) : (
                 <>Sign In <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/></>
              )}
            </button>
         </form>
-        
-        <div className="mt-8 text-center">
-            <div className="text-xs text-slate-400 mb-2 font-medium">Demo Access</div>
-            <div className="inline-flex items-center gap-3 bg-slate-50 px-5 py-2.5 rounded-xl border border-slate-100 text-xs text-slate-500 font-mono shadow-inner">
-                <span>user: <strong className="text-slate-700">admin</strong></span>
-                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                <span>pass: <strong className="text-slate-700">1234</strong></span>
-            </div>
+
+        {/* Info Box */}
+        <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100">
+          <p className="text-xs text-slate-600">
+            <span className="font-semibold text-slate-800">Admin-Only Access:</span> Contact your administrator for login credentials. No public signup is available.
+          </p>
         </div>
       </div>
 
       <div className="absolute bottom-6 text-brand-900/20 text-xs font-semibold tracking-widest uppercase z-10">
-        Secure System v1.0
+        Powered by Supabase
       </div>
     </div>
   );

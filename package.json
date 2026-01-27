@@ -1,5 +1,5 @@
 {
-  "name": "om-pure-manager",
+  "name": "aquaflow-manager",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,15 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.31.0",
-    "@tauri-apps/api": "^2.9.1",
-    "@tauri-apps/cli": "^2.9.6",
+    "@supabase/supabase-js": "^2.91.1",
     "lucide-react": "^0.555.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

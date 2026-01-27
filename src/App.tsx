@@ -1,5 +1,11 @@
+/**
+ * OMPure Water - Main Application
+ * SECURITY: All access requires authentication.
+ * Route protection is enforced via AuthProvider.
+ * Row Level Security (RLS) on Supabase handles data access control.
+ */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Users, ClipboardList, Receipt, LayoutDashboard, Menu, MapPin, Settings as SettingsIcon, FileSpreadsheet, BarChart3, LogOut, Wallet } from 'lucide-react';
 import CustomerManager from './components/CustomerManager';
 import SupplySheet from './components/SupplySheet';
@@ -11,72 +17,44 @@ import SupplyChart from './components/SupplyChart';
 import Analytics from './components/Analytics';
 import Login from './components/Login';
 import PaymentCollection from './components/PaymentCollection';
-import { getSettings, createAutomaticBackup } from './services/db';
+import { useAuth } from './lib/auth';
+import { logoutUser } from './lib/supabase';
 
 // Simple Router setup
 type Page = 'dashboard' | 'analytics' | 'supply' | 'billing' | 'payments' | 'customers' | 'areas' | 'settings' | 'chart';
 
 const App: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [companyName, setCompanyName] = useState<string>('OM Pure Water');
-
-  useEffect(() => {
-    const settings = getSettings();
-    setCompanyName(settings.companyName || 'OM Pure Water');
-  }, []);
-
-  // Setup automatic backup on window close/exit
-  useEffect(() => {
-    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-      // Create automatic backup when user closes the app
-      const backupResult = await createAutomaticBackup();
-      
-      if (backupResult.success) {
-        console.log(`✓ Automatic backup created: ${backupResult.message}`);
-      } else {
-        console.warn(`⚠ Backup failed: ${backupResult.message}`);
-      }
-
-      // Standard beforeunload behavior
-      e.preventDefault();
-      e.returnValue = '';
-    };
-
-    const handleUnload = async () => {
-      // Fallback backup attempt if beforeunload doesn't fire
-      await createAutomaticBackup();
-    };
-
-    // Add event listeners
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('unload', handleUnload);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('unload', handleUnload);
-    };
-  }, []);
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
 
   const handleLogout = async () => {
-    // Create automatic backup before logout
-    const backupResult = await createAutomaticBackup();
-    if (backupResult.success) {
-      console.log(`✓ Backup before logout: ${backupResult.message}`);
+    try {
+      await logoutUser();
+      // Auth state will update automatically via AuthProvider
+      setCurrentPage('dashboard');
+    } catch (err) {
+      console.error('Logout failed:', err);
+      // Still allow logout even if it fails
+      setCurrentPage('dashboard');
     }
-    
-    setIsAuthenticated(false);
-    setCurrentPage('dashboard');
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+    return <Login onLoginSuccess={() => {}} />;
   }
 
   const NavItem = ({ page, icon: Icon, label }: { page: Page, icon: any, label: string }) => (
@@ -102,7 +80,7 @@ const App: React.FC = () => {
         <div className="h-16 flex items-center px-6 border-b border-gray-100 bg-white">
           <span className="text-xl font-bold text-brand-600 flex items-center gap-2">
             <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">A</div>
-            {companyName}
+            AquaFlow
           </span>
         </div>
         <div className="p-4 space-y-1 flex flex-col h-[calc(100%-4rem)] overflow-y-auto">
@@ -140,7 +118,19 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible">
-       
+        {/* Top Header */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 md:px-6 print:hidden">
+          <button
+            onClick={() => setSidebarOpen(!isSidebarOpen)}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="flex-1"></div>
+          <div className="text-sm text-slate-600">
+            Authenticated User
+          </div>
+        </header>
 
         <main className="flex-1 overflow-auto bg-slate-50 print:overflow-visible print:h-auto">
           {currentPage === 'dashboard' && <Dashboard />}
