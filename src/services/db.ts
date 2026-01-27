@@ -293,3 +293,14 @@ export const saveCustomersBulk = async (newCustomers: Customer[]): Promise<void>
   }
 };
 
+export const deleteTransaction = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Failed to delete transaction:', err);
+    return false;
+  }
+};
+

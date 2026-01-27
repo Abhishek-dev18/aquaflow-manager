@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings as SettingsIcon, Save, Database, Trash2, Upload, RefreshCw, FolderDown, FolderOpen, HardDrive, ShieldCheck, Beaker, Users, CheckCircle, AlertCircle } from 'lucide-react';
-import { getSettings, saveSettings, saveCustomersBulk, generateNextCustomerId, getCustomers, deleteCustomer, saveArea, getAreas, exportDatabase, importDatabase, createAutomaticBackup, getBackupInfo } from '../services/db';
+import { getSettings, saveSettings, saveCustomersBulk, generateNextCustomerId, getCustomers, deleteCustomer, saveArea, getAreas, exportDatabase, importDatabase, createAutomaticBackup, getBackupInfo, getTransactions, deleteTransaction } from '../services/db';
 import { AppSettings, Customer } from '../types';
 
 export default function Settings() {
@@ -160,6 +160,53 @@ export default function Settings() {
     } catch (err) {
       console.error("Error deleting test customers:", err);
       alert("Error deleting test customers. Please try again.");
+    }
+  };
+
+  const handleCompleteCleanup = async () => {
+    if (!confirm("This will DELETE all 20 test customers AND all their transaction data. This action cannot be undone. Continue?")) {
+      return;
+    }
+
+    try {
+      const allCustomers = await getCustomers();
+      const allTransactions = await getTransactions();
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Find test customers created today
+      const testCustomerIds = new Set<string>();
+      for (const customer of allCustomers) {
+        if (customer.startDate === today) {
+          testCustomerIds.add(customer.id);
+        }
+      }
+
+      if (testCustomerIds.size === 0) {
+        alert("No test customers found from today to clean up.");
+        return;
+      }
+
+      // Delete all transactions for test customers
+      let deletedTransactions = 0;
+      for (const transaction of allTransactions) {
+        if (testCustomerIds.has(transaction.customer_id)) {
+          await deleteTransaction(transaction.id);
+          deletedTransactions++;
+        }
+      }
+
+      // Delete all test customers
+      let deletedCustomers = 0;
+      for (const customerId of testCustomerIds) {
+        await deleteCustomer(customerId);
+        deletedCustomers++;
+      }
+
+      alert(`Complete cleanup done!\nDeleted ${deletedCustomers} test customer(s) and ${deletedTransactions} transaction(s).`);
+      window.location.reload();
+    } catch (err) {
+      console.error("Error during complete cleanup:", err);
+      alert("Error during cleanup. Please try again.");
     }
   };
 
@@ -360,22 +407,31 @@ export default function Settings() {
            </h2>
            <p className="text-amber-700 text-sm mb-6">Use these tools for testing the application with sample data.</p>
            
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="space-y-3">
              <button 
                onClick={handleAddTestUsers}
-               className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+               className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
              >
                <Users size={18} /> Add 20 Test Customers
              </button>
              
-             <button 
-               onClick={handleDeleteTestCustomers}
-               className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
-             >
-               <Trash2 size={18} /> Delete Test Customers
-             </button>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+               <button 
+                 onClick={handleDeleteTestCustomers}
+                 className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+               >
+                 <Trash2 size={18} /> Delete Customers Only
+               </button>
+               
+               <button 
+                 onClick={handleCompleteCleanup}
+                 className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+               >
+                 <Trash2 size={18} /> Complete Cleanup
+               </button>
+             </div>
            </div>
-           <p className="text-[10px] text-amber-600 mt-2 italic font-medium">Note: Requires at least one Area to be created first.</p>
+           <p className="text-[10px] text-amber-600 mt-3 italic font-medium">💡 Tip: "Complete Cleanup" removes customers AND all their transactions for a fully clean slate.</p>
         </div>
       </div>
 
