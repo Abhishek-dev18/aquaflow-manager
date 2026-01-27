@@ -110,7 +110,7 @@ const PaymentCollection: React.FC = () => {
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Last Payment</p>
             {recentPayments.length > 0 ? (
               <p className="text-xs font-bold text-gray-700">
-                ₹{recentPayments[0].paymentAmount} from {recentPayments[0].customerName.split(' ')[0]}
+                ₹{recentPayments[0].amount} from {recentPayments[0].customerName.split(' ')[0]}
               </p>
             ) : (
               <p className="text-xs text-gray-400 italic">No recent payments</p>
@@ -271,7 +271,7 @@ const PaymentCollection: React.FC = () => {
                     <div className="font-bold text-gray-700">{p.customerName}</div>
                     <div className="text-[10px] text-gray-400">{p.date}</div>
                   </div>
-                  <div className="font-bold text-green-600">₹{p.paymentAmount}</div>
+                  <div className="font-bold text-green-600">₹{p.amount}</div>
                 </div>
               ))}
               {recentPayments.length === 0 && (

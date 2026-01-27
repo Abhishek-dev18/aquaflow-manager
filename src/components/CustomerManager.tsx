@@ -25,8 +25,9 @@ const CustomerManager: React.FC = () => {
 
   const loadData = async () => {
     const data = await getCustomers();
+    const areasData = await getAreas();
     setCustomers(data);
-    setAreas([]);
+    setAreas(areasData || []);
 
     // Load stats for all
     const newStats: Record<string, any> = {};

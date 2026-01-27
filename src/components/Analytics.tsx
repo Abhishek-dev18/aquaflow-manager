@@ -130,7 +130,7 @@ const Analytics: React.FC = () => {
     return transactions.filter(t => {
       const tDate = new Date(t.date);
       if (filterArea !== 'All') {
-        const cust = customers.find(c => c.id === t.customerId);
+        const cust = customers.find(c => c.id === t.customer_id);
         if (!cust || cust.area !== filterArea) return false;
       }
       if (viewMode === 'daily') {
@@ -148,9 +148,9 @@ const Analytics: React.FC = () => {
 
   const totals = useMemo(() => {
     return periodTransactions.reduce((acc, t) => ({
-      revenue: acc.revenue + t.paymentAmount,
-      jars: acc.jars + t.jarsDelivered,
-      thermos: acc.thermos + t.thermosDelivered
+      revenue: acc.revenue + (t.amount || 0),
+      jars: acc.jars + (t.jars_delivered || 0),
+      thermos: acc.thermos + (t.thermos_delivered || 0)
     }), { revenue: 0, jars: 0, thermos: 0 });
   }, [periodTransactions]);
 
@@ -163,12 +163,12 @@ const Analytics: React.FC = () => {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() - i);
         const dateStr = toYMD(d);
-        const dayTxs = transactions.filter(t => t.date === dateStr && (filterArea === 'All' || customers.find(c => c.id === t.customerId)?.area === filterArea));
+        const dayTxs = transactions.filter(t => t.date === dateStr && (filterArea === 'All' || customers.find(c => c.id === t.customer_id)?.area === filterArea));
         dataPoints.push({
           label: d.getDate().toString(),
-          value: dayTxs.reduce((s, t) => s + t.paymentAmount, 0),
-          v1: dayTxs.reduce((s, t) => s + t.jarsDelivered, 0),
-          v2: dayTxs.reduce((s, t) => s + t.thermosDelivered, 0)
+          value: dayTxs.reduce((s, t) => s + (t.amount || 0), 0),
+          v1: dayTxs.reduce((s, t) => s + (t.jars_delivered || 0), 0),
+          v2: dayTxs.reduce((s, t) => s + (t.thermos_delivered || 0), 0)
         });
       }
     } 
@@ -180,9 +180,9 @@ const Analytics: React.FC = () => {
         const dayTxs = periodTransactions.filter(t => t.date === dateStr);
          dataPoints.push({
           label: i.toString(),
-          value: dayTxs.reduce((s, t) => s + t.paymentAmount, 0),
-          v1: dayTxs.reduce((s, t) => s + t.jarsDelivered, 0),
-          v2: dayTxs.reduce((s, t) => s + t.thermosDelivered, 0)
+          value: dayTxs.reduce((s, t) => s + (t.amount || 0), 0),
+          v1: dayTxs.reduce((s, t) => s + (t.jars_delivered || 0), 0),
+          v2: dayTxs.reduce((s, t) => s + (t.thermos_delivered || 0), 0)
         });
       }
     }
@@ -191,9 +191,9 @@ const Analytics: React.FC = () => {
          const monthTxs = periodTransactions.filter(t => new Date(t.date).getMonth() === i);
          dataPoints.push({
            label: new Date(2000, i, 1).toLocaleString('default', { month: 'short' }),
-           value: monthTxs.reduce((s, t) => s + t.paymentAmount, 0),
-           v1: monthTxs.reduce((s, t) => s + t.jarsDelivered, 0),
-           v2: monthTxs.reduce((s, t) => s + t.thermosDelivered, 0)
+           value: monthTxs.reduce((s, t) => s + (t.amount || 0), 0),
+           v1: monthTxs.reduce((s, t) => s + (t.jars_delivered || 0), 0),
+           v2: monthTxs.reduce((s, t) => s + (t.thermos_delivered || 0), 0)
          });
        }
     }
@@ -203,12 +203,12 @@ const Analytics: React.FC = () => {
   const areaStats = useMemo(() => {
     const stats: Record<string, { revenue: number, jars: number, thermos: number }> = {};
     periodTransactions.forEach(t => {
-      const cust = customers.find(c => c.id === t.customerId);
+      const cust = customers.find(c => c.id === t.customer_id);
       const areaName = cust?.area || 'Unknown';
       if (!stats[areaName]) stats[areaName] = { revenue: 0, jars: 0, thermos: 0 };
-      stats[areaName].revenue += t.paymentAmount;
-      stats[areaName].jars += t.jarsDelivered;
-      stats[areaName].thermos += t.thermosDelivered;
+      stats[areaName].revenue += (t.amount || 0);
+      stats[areaName].jars += (t.jars_delivered || 0);
+      stats[areaName].thermos += (t.thermos_delivered || 0);
     });
     return Object.entries(stats).sort((a, b) => b[1].revenue - a[1].revenue);
   }, [periodTransactions, customers]);

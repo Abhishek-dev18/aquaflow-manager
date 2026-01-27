@@ -22,13 +22,13 @@ export interface Area {
 
 export interface Transaction {
   id: string;
-  customerId: string;
+  customer_id: string;
   date: string; // YYYY-MM-DD
-  jarsDelivered: number;
-  jarsReturned: number;
-  thermosDelivered: number;
-  thermosReturned: number;
-  paymentAmount: number;
+  jars_delivered: number;
+  jars_returned: number;
+  thermos_delivered: number;
+  thermos_returned: number;
+  amount: number;
 }
 
 export interface CustomerStats {
@@ -46,5 +46,5 @@ export interface AppSettings {
 }
 
 export const calculateDailyCost = (t: Transaction, c: Customer): number => {
-  return (t.jarsDelivered * c.rateJar) + (t.thermosDelivered * c.rateThermos);
+  return (t.jars_delivered * c.rateJar) + (t.thermos_delivered * c.rateThermos);
 };

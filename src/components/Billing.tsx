@@ -55,11 +55,11 @@ const Billing: React.FC = () => {
     // 1. Calculate Old Dues (Balance before this month + customer's initial old dues)
     let openingBalance = Number(customer.oldDues || 0);
     allTransactions.forEach(t => {
-      if (t.customerId === customer.id) {
+      if (t.customer_id === customer.id) {
         const tDate = new Date(t.date);
         if (tDate < startOfMonth) {
           const cost = calculateDailyCost(t, customer);
-          openingBalance += (cost - (t.paymentAmount || 0));
+          openingBalance += (cost - (t.amount || 0));
         }
       }
     });
@@ -67,7 +67,7 @@ const Billing: React.FC = () => {
     // 2. Calculate Current Month Details
     const transactionsInMonth = allTransactions.filter(t => {
       const [tYear, tMonth] = t.date.split('-').map(Number);
-      return t.customerId === customer.id && tYear === year && tMonth === month;
+      return t.customer_id === customer.id && tYear === year && tMonth === month;
     });
 
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -81,9 +81,9 @@ const Billing: React.FC = () => {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const tx = transactionsInMonth.find(t => t.date === dateStr);
       
-      const jars = tx?.jarsDelivered || 0;
-      const thermos = tx?.thermosDelivered || 0;
-      const paid = tx?.paymentAmount || 0;
+      const jars = tx?.jars_delivered || 0;
+      const thermos = tx?.thermos_delivered || 0;
+      const paid = tx?.amount || 0;
       
       const dailyCost = (jars * customer.rateJar) + (thermos * customer.rateThermos);
       
