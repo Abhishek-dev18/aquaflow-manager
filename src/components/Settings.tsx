@@ -133,6 +133,36 @@ export default function Settings() {
     window.location.reload();
   };
 
+  const handleDeleteTestCustomers = async () => {
+    if (!confirm("Are you sure you want to delete all 20 test customers? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const allCustomers = await getCustomers();
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Delete customers created today (test customers)
+      let deletedCount = 0;
+      for (const customer of allCustomers) {
+        if (customer.startDate === today) {
+          await deleteCustomer(customer.id);
+          deletedCount++;
+        }
+      }
+      
+      if (deletedCount > 0) {
+        alert(`${deletedCount} test customer(s) deleted successfully!`);
+        window.location.reload();
+      } else {
+        alert("No test customers found from today to delete.");
+      }
+    } catch (err) {
+      console.error("Error deleting test customers:", err);
+      alert("Error deleting test customers. Please try again.");
+    }
+  };
+
   return (
     <div className="p-6 max-w-3xl mx-auto pb-24">
       <div className="mb-8">
@@ -330,12 +360,21 @@ export default function Settings() {
            </h2>
            <p className="text-amber-700 text-sm mb-6">Use these tools for testing the application with sample data.</p>
            
-           <button 
-             onClick={handleAddTestUsers}
-             className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95"
-           >
-             <Users size={18} /> Populate 20 Test Customers
-           </button>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <button 
+               onClick={handleAddTestUsers}
+               className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+             >
+               <Users size={18} /> Add 20 Test Customers
+             </button>
+             
+             <button 
+               onClick={handleDeleteTestCustomers}
+               className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+             >
+               <Trash2 size={18} /> Delete Test Customers
+             </button>
+           </div>
            <p className="text-[10px] text-amber-600 mt-2 italic font-medium">Note: Requires at least one Area to be created first.</p>
         </div>
       </div>
