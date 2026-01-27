@@ -344,7 +344,7 @@ const CustomerManager: React.FC = () => {
                       <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
                       <input type="number" 
                         className="pl-6 w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700" 
-                        value={formData.rateJar} onChange={e => setFormData({...formData, rateJar: Number(e.target.value)})} />
+                        value={formData.rate_jar || 20} onChange={e => setFormData({...formData, rate_jar: Number(e.target.value)})} />
                     </div>
                   </div>
                   <div>
@@ -353,7 +353,7 @@ const CustomerManager: React.FC = () => {
                       <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
                       <input type="number" 
                         className="pl-6 w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700" 
-                        value={formData.rateThermos} onChange={e => setFormData({...formData, rateThermos: Number(e.target.value)})} />
+                        value={formData.rate_thermos || 20} onChange={e => setFormData({...formData, rate_thermos: Number(e.target.value)})} />
                     </div>
                   </div>
                    <div>
@@ -362,7 +362,7 @@ const CustomerManager: React.FC = () => {
                       <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
                       <input type="number" 
                         className="pl-6 w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700" 
-                        value={formData.securityDeposit} onChange={e => setFormData({...formData, securityDeposit: Number(e.target.value)})} />
+                        value={formData.security_deposit || 0} onChange={e => setFormData({...formData, security_deposit: Number(e.target.value)})} />
                     </div>
                   </div>
                 </div>
@@ -372,8 +372,8 @@ const CustomerManager: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
                   <input type="date" 
                     className="w-full rounded-lg border-gray-300 bg-white shadow-sm border p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-gray-600" 
-                    value={formData.startDate} 
-                    onChange={e => setFormData({...formData, startDate: e.target.value})} 
+                    value={formData.start_date || new Date().toISOString().split('T')[0]} 
+                    onChange={e => setFormData({...formData, start_date: e.target.value})} 
                   />
                   <p className="text-xs text-gray-400 mt-1">Changing date updates the Customer ID.</p>
               </div>
