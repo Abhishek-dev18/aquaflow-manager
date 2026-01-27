@@ -20,22 +20,26 @@ const Billing: React.FC = () => {
   });
   
   useEffect(() => {
-    setCustomers(getCustomers());
-    setAllTransactions(getTransactions());
-    setSettings(getSettings());
-    
-    // Add print styles to prevent blank pages
-    const style = document.createElement('style');
-    style.textContent = `
-      @media print {
-        body { margin: 0; padding: 0; }
-        .billing-container { page-break-inside: avoid; margin: 0; padding: 0; }
-        .billing-container { height: auto; min-height: auto; }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => document.head.removeChild(style);
+    const loadData = async () => {
+      const custData = await getCustomers();
+      const txData = await getTransactions();
+      setCustomers(custData);
+      setAllTransactions(txData);
+      
+      // Add print styles to prevent blank pages
+      const style = document.createElement('style');
+      style.textContent = `
+        @media print {
+          body { margin: 0; padding: 0; }
+          .billing-container { page-break-inside: avoid; margin: 0; padding: 0; }
+          .billing-container { height: auto; min-height: auto; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => document.head.removeChild(style);
+    };
+    loadData();
   }, []);
 
   // Computed

@@ -19,13 +19,16 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setFormData(getSettings());
-    setBackupInfo(getBackupInfo());
+    const loadData = async () => {
+      const settings = await getSettings();
+      setFormData(settings);
+    };
+    loadData();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveSettings(formData);
+    await saveSettings(formData);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
   };
@@ -86,9 +89,9 @@ export default function Settings() {
     reader.readAsText(file);
   };
 
-  const handleAddTestUsers = () => {
-    const areas = getAreas();
-    if (areas.length === 0) {
+  const handleAddTestUsers = async () => {
+    const areas = await getAreas();
+    if (!areas || areas.length === 0) {
       alert("Please add at least one Area first!");
       return;
     }
@@ -100,7 +103,7 @@ export default function Settings() {
     
     for (let i = 1; i <= 20; i++) {
       const area = areas[Math.floor(Math.random() * areas.length)].name;
-      const id = generateNextCustomerId(today);
+      const id = await generateNextCustomerId(today);
       const names = ["Rajesh Kumar", "Amit Sharma", "Suresh Gupta", "Priya Singh", "Anjali Verma", "Vikram Rathore", "Sunil Yadav", "Deepak Maurya", "Meena Devi", "Kavita Jha"];
       const hindiNames = ["राजेश कुमार", "अमित शर्मा", "सुरेश गुप्ता", "प्रिया सिंह", "अंजलि वर्मा", "विक्रम राठौर", "सुनील यादव", "दीपक मौर्य", "मीना देवी", "कविता झा"];
       
@@ -125,7 +128,7 @@ export default function Settings() {
       testCustomers.push(newCust);
     }
 
-    saveCustomersBulk(testCustomers);
+    await saveCustomersBulk(testCustomers);
     alert("20 Test Customers added successfully!");
     window.location.reload();
   };

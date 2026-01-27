@@ -9,25 +9,26 @@ const AreaManager: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
 
-  const loadAreas = () => {
-    setAreas(getAreas());
+  const loadAreas = async () => {
+    const areasData = await getAreas();
+    setAreas(areasData || []);
   };
 
   useEffect(() => {
     loadAreas();
   }, []);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-      saveArea({ name: newName.trim() });
+      await saveArea({ name: newName.trim() });
       setNewName('');
-      loadAreas();
+      await loadAreas();
     }
   };
 
   const startEdit = (area: Area) => {
-    setIsEditing(area.id);
+    setIsEditing(area.id || '');
     setEditName(area.name);
   };
 
@@ -36,18 +37,18 @@ const AreaManager: React.FC = () => {
     setEditName('');
   };
 
-  const handleUpdate = (id: string) => {
+  const handleUpdate = async (id: string) => {
     if (editName.trim()) {
-      saveArea({ id, name: editName.trim() });
+      await saveArea({ id, name: editName.trim() });
       setIsEditing(null);
-      loadAreas();
+      await loadAreas();
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure? This will remove the area from the selection list. Existing customers will keep the old area name until manually updated.')) {
-      deleteArea(id);
-      loadAreas();
+      await deleteArea(id);
+      await loadAreas();
     }
   };
 

@@ -100,8 +100,13 @@ const Analytics: React.FC = () => {
   const [filterArea, setFilterArea] = useState<string>('All');
 
   useEffect(() => {
-    setTransactions(getTransactions());
-    setCustomers(getCustomers());
+    const loadData = async () => {
+      const txData = await getTransactions();
+      const custData = await getCustomers();
+      setTransactions(txData);
+      setCustomers(custData);
+    };
+    loadData();
   }, []);
 
   const areas = useMemo(() => ['All', ...Array.from(new Set(customers.map(c => c.area))).sort()], [customers]);

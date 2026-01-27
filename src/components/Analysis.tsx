@@ -9,8 +9,8 @@ const Analysis: React.FC = () => {
 
   const handleGenerate = async () => {
     setLoading(true);
-    const customers = getCustomers();
-    const transactions = getTransactions();
+    const customers = await getCustomers();
+    const transactions = await getTransactions();
     
     // Safety check for API key presence in environment (simulated here since we can't control user's .env)
     if (!process.env.API_KEY) {

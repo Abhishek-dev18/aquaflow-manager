@@ -23,17 +23,13 @@ const CustomerManager: React.FC = () => {
 
   const [stats, setStats] = useState<Record<string, any>>({});
 
-  const loadData = () => {
-    const data = getCustomers();
-    const areaData = getAreas();
+  const loadData = async () => {
+    const data = await getCustomers();
     setCustomers(data);
-    setAreas(areaData);
+    setAreas([]);
 
     // Load stats for all
     const newStats: Record<string, any> = {};
-    data.forEach(c => {
-      newStats[c.id] = getCustomerStats(c.id);
-    });
     setStats(newStats);
   };
 
@@ -85,7 +81,7 @@ const CustomerManager: React.FC = () => {
     }, 300);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = editingId ? { ...formData, id: editingId } : formData;
     
@@ -95,7 +91,7 @@ const CustomerManager: React.FC = () => {
       return;
     }
 
-    saveCustomer(payload as Customer);
+    await saveCustomer(payload as Customer);
     setIsModalOpen(false);
     setEditingId(null);
     setFormData({ 
@@ -111,10 +107,10 @@ const CustomerManager: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure? This will hide the customer but keep history.')) {
-      deleteCustomer(id);
-      loadData();
+      await deleteCustomer(id);
+      await loadData();
     }
   };
 
