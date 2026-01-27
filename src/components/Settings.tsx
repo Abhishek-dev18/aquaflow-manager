@@ -113,17 +113,17 @@ export default function Settings() {
       const newCust: Customer = {
         id: `${id.substring(0, 6)}${String(i).padStart(4, '0')}`, // Mocking sequence for bulk
         name: `${names[nameIdx]} ${i}`,
-        nameHindi: `${hindiNames[nameIdx]} ${i}`,
+        name_hindi: `${hindiNames[nameIdx]} ${i}`,
         area: area,
         address: `${i * 101}, Main Street, Sector ${Math.floor(Math.random() * 50)}`,
         landmark: landmarks[lIdx],
-        landmarkHindi: hindiLandmarks[lIdx],
+        landmark_hindi: hindiLandmarks[lIdx],
         mobile: `98${Math.floor(10000000 + Math.random() * 90000000)}`,
-        rateJar: 20,
-        rateThermos: 10,
-        securityDeposit: 500,
-        oldDues: Math.floor(Math.random() * 1000),
-        startDate: today
+        rate_jar: 20,
+        rate_thermos: 10,
+        security_deposit: 500,
+        old_dues: Math.floor(Math.random() * 1000),
+        start_date: today
       };
       testCustomers.push(newCust);
     }
@@ -145,7 +145,7 @@ export default function Settings() {
       // Delete customers created today (test customers)
       let deletedCount = 0;
       for (const customer of allCustomers) {
-        if (customer.startDate === today) {
+        if (customer.start_date === today) {
           await deleteCustomer(customer.id);
           deletedCount++;
         }
@@ -176,7 +176,7 @@ export default function Settings() {
       // Find test customers created today
       const testCustomerIds = new Set<string>();
       for (const customer of allCustomers) {
-        if (customer.startDate === today) {
+        if (customer.start_date === today) {
           testCustomerIds.add(customer.id);
         }
       }

@@ -71,7 +71,7 @@ const SupplySheet: React.FC = () => {
     setTransactions(prev => ({
       ...prev,
       [customerId]: {
-        ...(prev[customerId] || { id: '', customerId, date, jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 }),
+        ...(prev[customerId] || { id: '', customer_id: customerId, date, jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 }),
         [field]: numValue
       }
     }));
@@ -91,18 +91,18 @@ const SupplySheet: React.FC = () => {
 
   // Helper to project stats based on unsaved inputs
   const getProjectedStats = (customer: Customer): CustomerStats => {
-    const currentTx = transactions[customer.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 };
-    const originalTx = originalTransactions[customer.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 };
+    const currentTx = transactions[customer.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 };
+    const originalTx = originalTransactions[customer.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 };
     const base = baseStats[customer.id] || { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
 
     // Calculate diffs
-    const jarDiff = (currentTx.jarsDelivered - currentTx.jarsReturned) - (originalTx.jarsDelivered - originalTx.jarsReturned);
-    const thermosDiff = (currentTx.thermosDelivered - currentTx.thermosReturned) - (originalTx.thermosDelivered - originalTx.thermosReturned);
+    const jarDiff = (currentTx.jars_delivered - currentTx.jars_returned) - (originalTx.jars_delivered - originalTx.jars_returned);
+    const thermosDiff = (currentTx.thermos_delivered - currentTx.thermos_returned) - (originalTx.thermos_delivered - originalTx.thermos_returned);
     
     const currentCost = calculateDailyCost(currentTx as Transaction, customer);
     const originalCost = calculateDailyCost(originalTx as Transaction, customer);
     const costDiff = currentCost - originalCost;
-    const payDiff = currentTx.paymentAmount - originalTx.paymentAmount;
+    const payDiff = currentTx.amount - originalTx.amount;
     const dueDiff = costDiff - payDiff;
 
     return {
@@ -126,14 +126,14 @@ const SupplySheet: React.FC = () => {
     };
 
     filteredCustomers.forEach(c => {
-      const tx = transactions[c.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 };
+      const tx = transactions[c.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 };
       const stats = getProjectedStats(c);
 
-      acc.jarsIn += (tx.jarsDelivered || 0);
-      acc.jarsOut += (tx.jarsReturned || 0);
-      acc.thermosIn += (tx.thermosDelivered || 0);
-      acc.thermosOut += (tx.thermosReturned || 0);
-      acc.payment += (tx.paymentAmount || 0);
+      acc.jarsIn += (tx.jars_delivered || 0);
+      acc.jarsOut += (tx.jars_returned || 0);
+      acc.thermosIn += (tx.thermos_delivered || 0);
+      acc.thermosOut += (tx.thermos_returned || 0);
+      acc.payment += (tx.amount || 0);
       
       acc.due += stats.totalDue;
       acc.jarBal += stats.currentJarBalance;
@@ -226,17 +226,17 @@ const SupplySheet: React.FC = () => {
                </tr>
             ) : (
               filteredCustomers.map(customer => {
-                const tx = (transactions[customer.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 }) as Transaction;
+                const tx = (transactions[customer.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 }) as Transaction;
                 const stat = getProjectedStats(customer);
                 
                 return (
                   <tr key={customer.id} className="hover:bg-brand-50/30 group transition-colors">
                     <td className="p-3 border border-brand-100">
-                      <div className="font-bold text-gray-800 text-sm font-hindi">{customer.nameHindi || customer.name}</div>
+                      <div className="font-bold text-gray-800 text-sm font-hindi">{customer.name_hindi || customer.name}</div>
                     </td>
                     
                     <td className="p-3 border border-brand-100 text-gray-500 font-hindi">
-                      {customer.landmarkHindi || customer.landmark}
+                      {customer.landmark_hindi || customer.landmark}
                     </td>
 
                     <td className="p-3 border border-brand-100 text-gray-600 font-mono text-[11px]">
@@ -248,16 +248,16 @@ const SupplySheet: React.FC = () => {
                       <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-brand-500 outline-none bg-transparent placeholder-gray-300 font-medium"
-                        value={tx.jarsDelivered === 0 ? '' : tx.jarsDelivered}
-                        onChange={(e) => handleInputChange(customer.id, 'jarsDelivered', e.target.value)}
+                        value={tx.jars_delivered === 0 ? '' : tx.jars_delivered}
+                        onChange={(e) => handleInputChange(customer.id, 'jars_delivered', e.target.value)}
                       />
                     </td>
                     <td className="p-0 border border-brand-100 bg-gray-50/50">
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-brand-500 outline-none bg-transparent text-gray-600 placeholder-gray-300"
-                        value={tx.jarsReturned === 0 ? '' : tx.jarsReturned}
-                        onChange={(e) => handleInputChange(customer.id, 'jarsReturned', e.target.value)}
+                        value={tx.jars_returned === 0 ? '' : tx.jars_returned}
+                        onChange={(e) => handleInputChange(customer.id, 'jars_returned', e.target.value)}
                       />
                     </td>
 
@@ -265,16 +265,16 @@ const SupplySheet: React.FC = () => {
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-orange-400 outline-none bg-transparent placeholder-gray-300 font-medium"
-                        value={tx.thermosDelivered === 0 ? '' : tx.thermosDelivered}
-                        onChange={(e) => handleInputChange(customer.id, 'thermosDelivered', e.target.value)}
+                        value={tx.thermos_delivered === 0 ? '' : tx.thermos_delivered}
+                        onChange={(e) => handleInputChange(customer.id, 'thermos_delivered', e.target.value)}
                       />
                     </td>
                     <td className="p-0 border border-brand-100 bg-gray-50/50">
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-orange-400 outline-none bg-transparent text-gray-600 placeholder-gray-300"
-                        value={tx.thermosReturned === 0 ? '' : tx.thermosReturned}
-                        onChange={(e) => handleInputChange(customer.id, 'thermosReturned', e.target.value)}
+                        value={tx.thermos_returned === 0 ? '' : tx.thermos_returned}
+                        onChange={(e) => handleInputChange(customer.id, 'thermos_returned', e.target.value)}
                       />
                     </td>
 
@@ -282,8 +282,8 @@ const SupplySheet: React.FC = () => {
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-green-500 outline-none bg-transparent font-bold text-green-700 placeholder-gray-300"
-                        value={tx.paymentAmount === 0 ? '' : tx.paymentAmount}
-                        onChange={(e) => handleInputChange(customer.id, 'paymentAmount', e.target.value)}
+                        value={tx.amount === 0 ? '' : tx.amount}
+                        onChange={(e) => handleInputChange(customer.id, 'amount', e.target.value)}
                       />
                     </td>
 

@@ -2,17 +2,17 @@
 export interface Customer {
   id: string;
   name: string;
-  nameHindi?: string;
+  name_hindi?: string;
   area: string;
   address: string; 
   landmark: string;
-  landmarkHindi?: string;
+  landmark_hindi?: string;
   mobile: string;
-  rateJar: number;
-  rateThermos: number;
-  securityDeposit: number;
-  oldDues: number;
-  startDate: string;
+  rate_jar: number;
+  rate_thermos: number;
+  security_deposit: number;
+  old_dues: number;
+  start_date: string;
 }
 
 export interface Area {
@@ -38,13 +38,13 @@ export interface CustomerStats {
 }
 
 export interface AppSettings {
-  companyName: string;
-  companyAddress: string;
-  companyMobile: string;
-  billFooterNote: string;
-  autoBackupPath?: string;  // Path for Automatic Backups
+  company_name: string;
+  company_address: string;
+  company_mobile: string;
+  bill_footer_note: string;
+  auto_backup_path?: string;  // Path for Automatic Backups
 }
 
 export const calculateDailyCost = (t: Transaction, c: Customer): number => {
-  return (t.jars_delivered * c.rateJar) + (t.thermos_delivered * c.rateThermos);
+  return (t.jars_delivered * c.rate_jar) + (t.thermos_delivered * c.rate_thermos);
 };

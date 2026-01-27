@@ -151,9 +151,9 @@ const SupplyChart: React.FC = () => {
                     <tr key={customer.id} className="h-6 print:h-[6.5mm] break-inside-avoid print:break-inside-avoid">
                       <td className="border border-black px-1 py-0 text-center text-gray-500 font-medium">{index + 1}</td>
                       <td className="border border-black px-2 py-0">
-                        <div className="font-bold truncate max-w-[145px] font-hindi leading-tight">{customer.nameHindi || customer.name}</div>
+                        <div className="font-bold truncate max-w-[145px] font-hindi leading-tight">{customer.name_hindi || customer.name}</div>
                       </td>
-                      <td className="border border-black px-2 py-0 truncate max-w-[105px] text-[11px] leading-tight font-hindi font-medium text-gray-600">{customer.landmarkHindi || customer.landmark}</td>
+                      <td className="border border-black px-2 py-0 truncate max-w-[105px] text-[11px] leading-tight font-hindi font-medium text-gray-600">{customer.landmark_hindi || customer.landmark}</td>
                       <td className="border border-black px-2 py-0 text-[11px] font-bold font-mono text-gray-700">{customer.mobile}</td>
                       
                       <td className="border border-black px-1 py-0 text-center"></td>

@@ -159,7 +159,7 @@ const PaymentCollection: React.FC = () => {
                       <div className="flex-1">
                         <div className="text-[10px] text-brand-500 font-mono font-bold mb-1">#{c.id}</div>
                         <h3 className="font-bold text-gray-800 leading-tight group-hover:text-brand-600 transition-colors">{c.name}</h3>
-                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-hindi">{c.nameHindi}</p>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-hindi">{c.name_hindi}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Balance Due</p>

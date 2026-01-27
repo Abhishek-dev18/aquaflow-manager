@@ -17,8 +17,8 @@ const CustomerManager: React.FC = () => {
   // Form State
   const [formData, setFormData] = useState<Partial<Customer>>({
     id: '',
-    name: '', nameHindi: '', area: '', landmark: '', landmarkHindi: '', address: '', mobile: '', 
-    rateJar: 20, rateThermos: 10, securityDeposit: 0, oldDues: 0, startDate: new Date().toISOString().split('T')[0]
+    name: '', name_hindi: '', area: '', landmark: '', landmark_hindi: '', address: '', mobile: '', 
+    rate_jar: 20, rate_thermos: 10, security_deposit: 0, old_dues: 0, start_date: new Date().toISOString().split('T')[0]
   });
 
   const [stats, setStats] = useState<Record<string, any>>({});
@@ -40,11 +40,11 @@ const CustomerManager: React.FC = () => {
 
   // Watch start date changes to update ID only when adding new customer
   useEffect(() => {
-    if (!editingId && formData.startDate && isModalOpen) {
-       const nextId = generateNextCustomerId(formData.startDate);
+    if (!editingId && formData.start_date && isModalOpen) {
+       const nextId = generateNextCustomerId(formData.start_date);
        setFormData(prev => ({ ...prev, id: nextId }));
     }
-  }, [formData.startDate, editingId, isModalOpen]);
+  }, [formData.start_date, editingId, isModalOpen]);
 
   const transliterate = async (text: string, callback: (hindi: string) => void) => {
     if (!text.trim()) {
@@ -68,7 +68,7 @@ const CustomerManager: React.FC = () => {
     setFormData(prev => ({ ...prev, name: val }));
     if (nameTimeoutRef.current) clearTimeout(nameTimeoutRef.current);
     nameTimeoutRef.current = setTimeout(() => {
-      transliterate(val, (hindi) => setFormData(prev => ({ ...prev, nameHindi: hindi })));
+      transliterate(val, (hindi) => setFormData(prev => ({ ...prev, name_hindi: hindi })));
     }, 300);
   };
 
@@ -78,7 +78,7 @@ const CustomerManager: React.FC = () => {
     setFormData(prev => ({ ...prev, landmark: val }));
     if (landmarkTimeoutRef.current) clearTimeout(landmarkTimeoutRef.current);
     landmarkTimeoutRef.current = setTimeout(() => {
-      transliterate(val, (hindi) => setFormData(prev => ({ ...prev, landmarkHindi: hindi })));
+      transliterate(val, (hindi) => setFormData(prev => ({ ...prev, landmark_hindi: hindi })));
     }, 300);
   };
 
@@ -96,8 +96,8 @@ const CustomerManager: React.FC = () => {
     setIsModalOpen(false);
     setEditingId(null);
     setFormData({ 
-      name: '', nameHindi: '', area: '', landmark: '', landmarkHindi: '', address: '', mobile: '', 
-      rateJar: 20, rateThermos: 10, securityDeposit: 0, oldDues: 0, startDate: new Date().toISOString().split('T')[0] 
+      name: '', name_hindi: '', area: '', landmark: '', landmark_hindi: '', address: '', mobile: '', 
+      rate_jar: 20, rate_thermos: 10, security_deposit: 0, old_dues: 0, start_date: new Date().toISOString().split('T')[0] 
     });
     loadData();
   };
@@ -123,11 +123,11 @@ const CustomerManager: React.FC = () => {
     setFormData(prev => ({ 
       ...prev, 
       id: nextId,
-      name: '', nameHindi: '', landmark: '', landmarkHindi: '', address: '', mobile: '', 
+      name: '', name_hindi: '', landmark: '', landmark_hindi: '', address: '', mobile: '', 
       // Reset area or default to first
       area: areas.length > 0 ? areas[0].name : '',
-      rateJar: 20, rateThermos: 10, securityDeposit: 0, oldDues: 0,
-      startDate: today
+      rate_jar: 20, rate_thermos: 10, security_deposit: 0, old_dues: 0,
+      start_date: today
     }));
     setIsModalOpen(true);
   }
@@ -190,19 +190,19 @@ const CustomerManager: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="text-[10px] text-brand-500 font-mono mb-1">{customer.id}</div>
                         <div className="font-semibold text-gray-800">{customer.name}</div>
-                        {customer.nameHindi && <div className="text-sm text-gray-600 font-hindi">{customer.nameHindi}</div>}
+                        {customer.name_hindi && <div className="text-sm text-gray-600 font-hindi">{customer.name_hindi}</div>}
                         <div className="text-sm text-gray-500 flex items-center gap-1 mt-1"><Phone size={12}/> {customer.mobile}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                          <div className="font-medium text-gray-700">{customer.landmark}</div>
-                         {customer.landmarkHindi && <div className="text-xs text-gray-400 font-hindi mt-0.5">{customer.landmarkHindi}</div>}
+                         {customer.landmark_hindi && <div className="text-xs text-gray-400 font-hindi mt-0.5">{customer.landmark_hindi}</div>}
                          {customer.address && <div className="text-xs text-gray-400 mt-0.5 truncate" title={customer.address}>{customer.address}</div>}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="flex gap-2"><span className="text-gray-400 text-xs w-12">Jar:</span> ₹{customer.rateJar}</div>
-                        <div className="flex gap-2"><span className="text-gray-400 text-xs w-12">Thermos:</span> ₹{customer.rateThermos}</div>
+                        <div className="flex gap-2"><span className="text-gray-400 text-xs w-12">Jar:</span> ₹{customer.rate_jar}</div>
+                        <div className="flex gap-2"><span className="text-gray-400 text-xs w-12">Thermos:</span> ₹{customer.rate_thermos}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">₹{customer.securityDeposit}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">₹{customer.security_deposit}</td>
                       <td className="px-6 py-4 text-sm">
                          <div className="flex flex-col gap-1">
                            <span className={s.currentJarBalance > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
@@ -265,7 +265,7 @@ const CustomerManager: React.FC = () => {
                   <input type="text" 
                     className="w-full rounded-lg border-gray-300 bg-white shadow-sm border p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder-gray-300 font-hindi" 
                     placeholder="नाम हिंदी में"
-                    value={formData.nameHindi || ''} onChange={e => setFormData({...formData, nameHindi: e.target.value})} />
+                    value={formData.name_hindi || ''} onChange={e => setFormData({...formData, name_hindi: e.target.value})} />
                 </div>
               </div>
 
@@ -311,7 +311,7 @@ const CustomerManager: React.FC = () => {
                    <input type="text" 
                     className="w-full rounded-lg border-gray-300 bg-white shadow-sm border p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder-gray-300 font-hindi" 
                     placeholder="लैंडमार्क हिंदी में"
-                    value={formData.landmarkHindi || ''} onChange={e => setFormData({...formData, landmarkHindi: e.target.value})} />
+                    value={formData.landmark_hindi || ''} onChange={e => setFormData({...formData, landmark_hindi: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1"><IndianRupee size={14}/> Old Dues (Opening Bal)</label>
