@@ -41,7 +41,7 @@ export const getSettings = (): AppSettings => {
     companyName: 'OM Pure Water',
     companyAddress: 'Main Market, City',
     companyMobile: '',
-    billFooterNote: 'Thank you for your business!'
+    billfooternote: 'Thank you for your business!'
   };
 };
 
