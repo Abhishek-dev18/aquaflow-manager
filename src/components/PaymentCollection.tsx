@@ -38,7 +38,7 @@ const PaymentCollection: React.FC = () => {
       .slice(0, 5)
       .map(t => ({
         ...t,
-        customerName: custMap[t.customer_id]?.name || 'Unknown'
+        customerName: custMap[t.customerId]?.name || 'Unknown'
       }));
     
     setRecentPayments(payments);
@@ -66,10 +66,10 @@ const PaymentCollection: React.FC = () => {
 
     // Existing transaction on same date?
     const allTxs = await getTransactions();
-    const existingTxs = allTxs.find(t => t.customer_id === selectedCustomer.id && t.date === paymentDate);
+    const existingTxs = allTxs.find(t => t.customerId === selectedCustomer.id && t.date === paymentDate);
 
-    const payload: Partial<Transaction> & { customer_id: string; date: string } = {
-      customer_id: selectedCustomer.id,
+    const payload: Partial<Transaction> & { customerId: string; date: string } = {
+      customerId: selectedCustomer.id,
       date: paymentDate,
       amount: (existingTxs?.amount || 0) + amount
     };

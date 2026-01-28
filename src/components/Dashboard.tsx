@@ -28,7 +28,7 @@ const Dashboard: React.FC = () => {
       // Calculate Total Due
       let totalDue = 0;
       for (const customer of customers) {
-        const customerTxs = allTransactions.filter(t => t.customer_id === customer.id);
+        const customerTxs = allTransactions.filter(t => t.customerId === customer.id);
         const paid = customerTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
         totalDue += Math.max(0, (customer.balance || 0) - paid);
       }
@@ -37,7 +37,7 @@ const Dashboard: React.FC = () => {
       const todayStr = new Date().toISOString().split('T')[0];
       const todaysTx = allTransactions.filter(t => t.date?.startsWith(todayStr));
       
-      const jarsToday = todaysTx.reduce((acc, t) => acc + (t.jars_delivered || 0), 0);
+      const jarsToday = todaysTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
       const thermosToday = todaysTx.reduce((acc, t) => acc + (t.thermos_delivered || 0), 0);
       const paymentToday = todaysTx.reduce((acc, t) => acc + (t.amount || 0), 0);
       
@@ -49,7 +49,7 @@ const Dashboard: React.FC = () => {
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       });
 
-      const jarsMonth = monthTx.reduce((acc, t) => acc + (t.jars_delivered || 0), 0);
+      const jarsMonth = monthTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
       const thermosMonth = monthTx.reduce((acc, t) => acc + (t.thermos_delivered || 0), 0);
       const paymentMonth = monthTx.reduce((acc, t) => acc + (t.amount || 0), 0);
 

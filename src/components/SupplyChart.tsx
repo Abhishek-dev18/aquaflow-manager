@@ -26,8 +26,8 @@ const SupplyChart: React.FC = () => {
       const txs = allTxs.filter(t => t.date?.startsWith(date));
       const txMap: Record<string, Transaction> = {};
       txs.forEach(t => {
-        if (t.customer_id) {
-          txMap[t.customer_id] = t;
+        if (t.customerId) {
+          txMap[t.customerId] = t;
         }
       });
       setTransactions(txMap);

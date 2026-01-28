@@ -252,7 +252,8 @@ export const getSettings = async (): Promise<AppSettings> => {
 
 export const saveSettings = async (settings: AppSettings): Promise<boolean> => {
   try {
-    const { error } = await supabase.from('app_settings').upsert(settings, { onConflict: 'id' }).select();
+    const settingsWithId = { id: 'default', ...settings };
+    const { error } = await supabase.from('app_settings').upsert(settingsWithId, { onConflict: 'id' }).select();
     if (error) throw error;
     return true;
   } catch (err) {

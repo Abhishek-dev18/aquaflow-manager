@@ -189,7 +189,7 @@ export default function Settings() {
       // Delete all transactions for test customers
       let deletedTransactions = 0;
       for (const transaction of allTransactions) {
-        if (testCustomerIds.has(transaction.customer_id)) {
+        if (testCustomerIds.has(transaction.customerId)) {
           await deleteTransaction(transaction.id);
           deletedTransactions++;
         }

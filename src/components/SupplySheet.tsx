@@ -37,8 +37,8 @@ const SupplySheet: React.FC = () => {
     const txMap: Record<string, Transaction> = {};
     
     txs.forEach(t => {
-      if (t.customer_id) {
-        txMap[t.customer_id] = { ...t };
+      if (t.customerId) {
+        txMap[t.customerId] = { ...t };
       }
     });
     
@@ -71,7 +71,7 @@ const SupplySheet: React.FC = () => {
     setTransactions(prev => ({
       ...prev,
       [customerId]: {
-        ...(prev[customerId] || { id: '', customer_id: customerId, date, jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 }),
+        ...(prev[customerId] || { id: '', customerId: customerId, date, jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 }),
         [field]: numValue
       }
     }));
@@ -91,18 +91,18 @@ const SupplySheet: React.FC = () => {
 
   // Helper to project stats based on unsaved inputs
   const getProjectedStats = (customer: Customer): CustomerStats => {
-    const currentTx = transactions[customer.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 };
-    const originalTx = originalTransactions[customer.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 };
+    const currentTx = transactions[customer.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 };
+    const originalTx = originalTransactions[customer.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 };
     const base = baseStats[customer.id] || { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
 
     // Calculate diffs
-    const jarDiff = (currentTx.jars_delivered - currentTx.jars_returned) - (originalTx.jars_delivered - originalTx.jars_returned);
-    const thermosDiff = (currentTx.thermos_delivered - currentTx.thermos_returned) - (originalTx.thermos_delivered - originalTx.thermos_returned);
+    const jarDiff = (currentTx.jarsDelivered - currentTx.jarsReturned) - (originalTx.jarsDelivered - originalTx.jarsReturned);
+    const thermosDiff = (currentTx.thermosDelivered - currentTx.thermosReturned) - (originalTx.thermosDelivered - originalTx.thermosReturned);
     
     const currentCost = calculateDailyCost(currentTx as Transaction, customer);
     const originalCost = calculateDailyCost(originalTx as Transaction, customer);
     const costDiff = currentCost - originalCost;
-    const payDiff = currentTx.amount - originalTx.amount;
+    const payDiff = currentTx.paymentAmount - originalTx.paymentAmount;
     const dueDiff = costDiff - payDiff;
 
     return {
@@ -126,14 +126,14 @@ const SupplySheet: React.FC = () => {
     };
 
     filteredCustomers.forEach(c => {
-      const tx = transactions[c.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 };
+      const tx = transactions[c.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 };
       const stats = getProjectedStats(c);
 
-      acc.jarsIn += (tx.jars_delivered || 0);
-      acc.jarsOut += (tx.jars_returned || 0);
-      acc.thermosIn += (tx.thermos_delivered || 0);
-      acc.thermosOut += (tx.thermos_returned || 0);
-      acc.payment += (tx.amount || 0);
+      acc.jarsIn += (tx.jarsDelivered || 0);
+      acc.jarsOut += (tx.jarsReturned || 0);
+      acc.thermosIn += (tx.thermosDelivered || 0);
+      acc.thermosOut += (tx.thermosReturned || 0);
+      acc.payment += (tx.paymentAmount || 0);
       
       acc.due += stats.totalDue;
       acc.jarBal += stats.currentJarBalance;
@@ -226,7 +226,7 @@ const SupplySheet: React.FC = () => {
                </tr>
             ) : (
               filteredCustomers.map(customer => {
-                const tx = (transactions[customer.id] || { jars_delivered: 0, jars_returned: 0, thermos_delivered: 0, thermos_returned: 0, amount: 0 }) as Transaction;
+                const tx = (transactions[customer.id] || { jarsDelivered: 0, jarsReturned: 0, thermosDelivered: 0, thermosReturned: 0, paymentAmount: 0 }) as Transaction;
                 const stat = getProjectedStats(customer);
                 
                 return (
@@ -248,16 +248,16 @@ const SupplySheet: React.FC = () => {
                       <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-brand-500 outline-none bg-transparent placeholder-gray-300 font-medium"
-                        value={tx.jars_delivered === 0 ? '' : tx.jars_delivered}
-                        onChange={(e) => handleInputChange(customer.id, 'jars_delivered', e.target.value)}
+                        value={tx.jarsDelivered === 0 ? '' : tx.jarsDelivered}
+                        onChange={(e) => handleInputChange(customer.id, 'jarsDelivered', e.target.value)}
                       />
                     </td>
                     <td className="p-0 border border-brand-100 bg-gray-50/50">
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-brand-500 outline-none bg-transparent text-gray-600 placeholder-gray-300"
-                        value={tx.jars_returned === 0 ? '' : tx.jars_returned}
-                        onChange={(e) => handleInputChange(customer.id, 'jars_returned', e.target.value)}
+                        value={tx.jarsReturned === 0 ? '' : tx.jarsReturned}
+                        onChange={(e) => handleInputChange(customer.id, 'jarsReturned', e.target.value)}
                       />
                     </td>
 
@@ -265,16 +265,16 @@ const SupplySheet: React.FC = () => {
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-orange-400 outline-none bg-transparent placeholder-gray-300 font-medium"
-                        value={tx.thermos_delivered === 0 ? '' : tx.thermos_delivered}
-                        onChange={(e) => handleInputChange(customer.id, 'thermos_delivered', e.target.value)}
+                        value={tx.thermosDelivered === 0 ? '' : tx.thermosDelivered}
+                        onChange={(e) => handleInputChange(customer.id, 'thermosDelivered', e.target.value)}
                       />
                     </td>
                     <td className="p-0 border border-brand-100 bg-gray-50/50">
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-orange-400 outline-none bg-transparent text-gray-600 placeholder-gray-300"
-                        value={tx.thermos_returned === 0 ? '' : tx.thermos_returned}
-                        onChange={(e) => handleInputChange(customer.id, 'thermos_returned', e.target.value)}
+                        value={tx.thermosReturned === 0 ? '' : tx.thermosReturned}
+                        onChange={(e) => handleInputChange(customer.id, 'thermosReturned', e.target.value)}
                       />
                     </td>
 
