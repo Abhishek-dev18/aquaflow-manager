@@ -7,6 +7,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { showAlert } from './alert';
 
 // Load environment variables via Vite
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -40,7 +41,6 @@ export const loginAdmin = async (email: string, password: string) => {
   });
   
   if (error) {
-    alert('Login failed: ' + error.message);
     throw new Error(error.message);
   }
   
@@ -54,7 +54,7 @@ export const logoutUser = async () => {
   const { error } = await supabase.auth.signOut();
   
   if (error) {
-    alert('Logout failed: ' + error.message);
+    showAlert('Logout failed: ' + error.message);
     throw new Error(error.message);
   }
 };
@@ -66,7 +66,7 @@ export const getCurrentSession = async () => {
   const { data, error } = await supabase.auth.getSession();
   
   if (error) {
-    alert('Failed to get session: ' + error.message);
+    showAlert('Failed to get session: ' + error.message);
     return null;
   }
   

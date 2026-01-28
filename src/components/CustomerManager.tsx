@@ -58,7 +58,7 @@ const CustomerManager: React.FC = () => {
          callback(data[1][0][1][0]);
       }
     } catch (err) {
-      alert('Transliteration failed: ' + err);
+      showAlert('Transliteration failed: ' + err);
     }
   };
 

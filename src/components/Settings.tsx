@@ -99,7 +99,7 @@ export default function Settings() {
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      alert("Error deleting test customers: " + errorMsg);
+      showAlert("Error deleting test customers: " + errorMsg);
     }
   };
 
@@ -146,7 +146,7 @@ export default function Settings() {
       window.location.reload();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      alert("Error during cleanup: " + errorMsg);
+      showAlert("Error during cleanup: " + errorMsg);
     }
   };
 

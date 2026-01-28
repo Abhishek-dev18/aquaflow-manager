@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { Lock, Mail, Droplets, ArrowRight } from 'lucide-react';
 import { loginAdmin } from '../lib/supabase';
+import { showAlert } from '../lib/alert';
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -39,7 +40,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(errorMessage);
-      alert('Authentication error: ' + errorMessage);
+      showAlert(errorMessage);
     } finally {
       setLoading(false);
     }

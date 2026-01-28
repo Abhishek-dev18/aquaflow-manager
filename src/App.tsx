@@ -5,7 +5,7 @@
  * Row Level Security (RLS) on Supabase handles data access control.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, ClipboardList, Receipt, LayoutDashboard, Menu, MapPin, Settings as SettingsIcon, FileSpreadsheet, BarChart3, LogOut, Wallet } from 'lucide-react';
 import CustomerManager from './components/CustomerManager';
 import SupplySheet from './components/SupplySheet';
@@ -17,6 +17,7 @@ import SupplyChart from './components/SupplyChart';
 import Analytics from './components/Analytics';
 import Login from './components/Login';
 import PaymentCollection from './components/PaymentCollection';
+import Alert, { AlertType, setAlertCallback, showAlert } from './components/Alert';
 import { useAuth } from './lib/auth';
 import { logoutUser } from './lib/supabase';
 
@@ -27,6 +28,11 @@ const App: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{ message: string; type: AlertType; onClose: () => void } | null>(null);
+
+  useEffect(() => {
+    setAlertCallback((config) => setAlertConfig(config));
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -71,6 +77,15 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800">
+      {/* Alert Modal */}
+      {alertConfig && (
+        <Alert
+          message={alertConfig.message}
+          type={alertConfig.type}
+          onClose={alertConfig.onClose}
+        />
+      )}
+
       {/* Sidebar - Mobile Responsive */}
       <div className={`
         fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out shadow-lg md:shadow-none
@@ -79,8 +94,8 @@ const App: React.FC = () => {
       `}>
         <div className="h-16 flex items-center px-6 border-b border-gray-100 bg-white">
           <span className="text-xl font-bold text-brand-600 flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">A</div>
-            AquaFlow
+            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">O</div>
+            OM Pure Water
           </span>
         </div>
         <div className="p-4 space-y-1 flex flex-col h-[calc(100%-4rem)] overflow-y-auto">
