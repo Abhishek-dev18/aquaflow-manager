@@ -98,8 +98,8 @@ export default function Settings() {
         alert("No test customers found from today to delete.");
       }
     } catch (err) {
-      console.error("Error deleting test customers:", err);
-      alert("Error deleting test customers. Please try again.");
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert("Error deleting test customers: " + errorMsg);
     }
   };
 
@@ -145,8 +145,8 @@ export default function Settings() {
       alert(`Complete cleanup done!\nDeleted ${deletedCustomers} test customer(s) and ${deletedTransactions} transaction(s).`);
       window.location.reload();
     } catch (err) {
-      console.error("Error during complete cleanup:", err);
-      alert("Error during cleanup. Please try again.");
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert("Error during cleanup: " + errorMsg);
     }
   };
 

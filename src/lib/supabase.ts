@@ -40,7 +40,7 @@ export const loginAdmin = async (email: string, password: string) => {
   });
   
   if (error) {
-    console.error('Login failed:', error.message);
+    alert('Login failed: ' + error.message);
     throw new Error(error.message);
   }
   
@@ -54,7 +54,7 @@ export const logoutUser = async () => {
   const { error } = await supabase.auth.signOut();
   
   if (error) {
-    console.error('Logout failed:', error.message);
+    alert('Logout failed: ' + error.message);
     throw new Error(error.message);
   }
 };
@@ -66,7 +66,7 @@ export const getCurrentSession = async () => {
   const { data, error } = await supabase.auth.getSession();
   
   if (error) {
-    console.error('Failed to get session:', error.message);
+    alert('Failed to get session: ' + error.message);
     return null;
   }
   

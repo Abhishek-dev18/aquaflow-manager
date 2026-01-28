@@ -16,7 +16,7 @@ const getStoredData = <T>(key: string): T[] => {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   } catch (e) {
-    console.error(`Error loading ${key}`, e);
+    alert(`Error loading ${key}: ${e}`);
     return [];
   }
 };
@@ -25,7 +25,7 @@ const setStoredData = <T>(key: string, data: T[]) => {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
-    console.error(`Error saving ${key}`, e);
+    alert(`Error saving ${key}: ${e}`);
   }
 };
 
@@ -35,7 +35,7 @@ export const getSettings = (): AppSettings => {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (data) return JSON.parse(data);
   } catch (e) {
-    console.error("Error loading settings", e);
+    alert("Error loading settings: " + e);
   }
   return {
     companyName: 'OM Pure Water',
@@ -316,7 +316,7 @@ export const createAutomaticBackup = async (backupFolderPath?: string): Promise<
       filePath: fullPath
     };
   } catch (e) {
-    console.error("Automatic backup failed", e);
+    alert("Automatic backup failed: " + e);
     return { 
       success: false, 
       message: 'Failed to create automatic backup: ' + (e instanceof Error ? e.message : 'Unknown error')
@@ -329,7 +329,7 @@ const getBackupMetadata = (): Array<{ fileName: string; timestamp: string; size:
     const data = localStorage.getItem('_backup_metadata');
     return data ? JSON.parse(data) : [];
   } catch (e) {
-    console.error('Error loading backup metadata', e);
+    alert('Error loading backup metadata: ' + e);
     return [];
   }
 };
@@ -352,10 +352,10 @@ const cleanupOldBackups = async (folderPath: string, allBackups: Array<{ fileNam
       const keptBackups = sortedBackups.slice(0, MAX_BACKUPS);
       localStorage.setItem('_backup_metadata', JSON.stringify(keptBackups));
       
-      console.log(`Cleaned up ${backupsToDelete.length} old backups. Keeping ${keptBackups.length} recent backups.`);
+      alert(`Cleaned up ${backupsToDelete.length} old backups. Keeping ${keptBackups.length} recent backups.`);
     }
   } catch (e) {
-    console.error('Error during backup cleanup', e);
+    alert('Error during backup cleanup: ' + e);
   }
 };
 
@@ -406,7 +406,7 @@ export const importDatabase = (jsonString: string): { success: boolean, message:
 
     return { success: true, message: 'Database restored successfully from SQLite backup.' };
   } catch (e) {
-    console.error("Import failed", e);
+    alert("Import failed: " + e);
     return { success: false, message: 'Failed to parse backup file. Ensure the file is valid JSON.' };
   }
 };

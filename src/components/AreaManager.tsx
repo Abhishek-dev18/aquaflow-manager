@@ -21,7 +21,10 @@ const AreaManager: React.FC = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-      await saveArea({ name: newName.trim() });
+      await saveArea({ 
+        id: crypto.randomUUID(),
+        name: newName.trim() 
+      });
       setNewName('');
       await loadAreas();
     }

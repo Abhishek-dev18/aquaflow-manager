@@ -18,7 +18,7 @@ export const getCustomers = async (): Promise<Customer[]> => {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error('Failed to fetch customers:', err);
+    alert('Failed to fetch customers: ' + err);
     return [];
   }
 };
@@ -33,7 +33,7 @@ export const saveCustomer = async (customer: Omit<Customer, 'id'> | Customer): P
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error('Failed to save customer:', err);
+    alert('Failed to save customer: ' + err);
     return null;
   }
 };
@@ -44,7 +44,7 @@ export const deleteCustomer = async (id: string): Promise<boolean> => {
     if (error) throw error;
     return true;
   } catch (err) {
-    console.error('Failed to delete customer:', err);
+    alert('Failed to delete customer: ' + err);
     return false;
   }
 };
@@ -66,7 +66,7 @@ export const generateNextCustomerId = async (dateStr: string): Promise<string> =
     });
     return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
   } catch (err) {
-    console.error('Failed to generate customer ID:', err);
+    alert('Failed to generate customer ID: ' + err);
     return '';
   }
 };
@@ -87,7 +87,7 @@ export const getCustomerStats = async (customerId: string): Promise<CustomerStat
     });
     return { currentJarBalance: jarBal, currentThermosBalance: thermosBal, totalDue: due };
   } catch (err) {
-    console.error('Failed to get customer stats:', err);
+    alert('Failed to get customer stats: ' + err);
     return { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
   }
 };
@@ -101,7 +101,7 @@ export const getAllCustomerStats = async (): Promise<Record<string, CustomerStat
     }
     return stats;
   } catch (err) {
-    console.error('Failed to get all customer stats:', err);
+    alert('Failed to get all customer stats: ' + err);
     return {};
   }
 };
@@ -114,7 +114,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error('Failed to fetch transactions:', err);
+    alert('Failed to fetch transactions: ' + err);
     return [];
   }
 };
@@ -125,7 +125,7 @@ export const getTransactionsByCustomerId = async (customerId: string): Promise<T
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error('Failed to fetch transactions by customer:', err);
+    alert('Failed to fetch transactions by customer: ' + err);
     return [];
   }
 };
@@ -136,7 +136,7 @@ export const getTransactionsByDate = async (date: string): Promise<Transaction[]
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error('Failed to fetch transactions by date:', err);
+    alert('Failed to fetch transactions by date: ' + err);
     return [];
   }
 };
@@ -158,7 +158,7 @@ export const getTransactionsByCustomerAndMonth = async (
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error('Failed to fetch transactions by customer and month:', err);
+    alert('Failed to fetch transactions by customer and month: ' + err);
     return [];
   }
 };
@@ -183,7 +183,7 @@ export const saveTransaction = async (
     if (error) throw error;
     return result;
   } catch (err) {
-    console.error('Failed to save transaction:', err);
+    alert('Failed to save transaction: ' + err);
     return null;
   }
 };
@@ -196,7 +196,7 @@ export const getAreas = async (): Promise<Area[]> => {
     if (error) throw error;
     return data || [];
   } catch (err) {
-    console.error('Failed to fetch areas:', err);
+    alert('Failed to fetch areas: ' + err);
     return [];
   }
 };
@@ -211,7 +211,7 @@ export const saveArea = async (area: Partial<Area>): Promise<Area | null> => {
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error('Failed to save area:', err);
+    alert('Failed to save area: ' + err);
     return null;
   }
 };
@@ -222,7 +222,7 @@ export const deleteArea = async (id: string): Promise<boolean> => {
     if (error) throw error;
     return true;
   } catch (err) {
-    console.error('Failed to delete area:', err);
+    alert('Failed to delete area: ' + err);
     return false;
   }
 };
@@ -240,7 +240,7 @@ export const getSettings = async (): Promise<AppSettings> => {
       billFooterNote: 'Thank you for your business!',
     };
   } catch (err) {
-    console.error('Failed to fetch settings:', err);
+    alert('Failed to fetch settings: ' + err);
     return {
       companyName: 'OMPure Water',
       companyAddress: '',
@@ -257,7 +257,7 @@ export const saveSettings = async (settings: AppSettings): Promise<boolean> => {
     if (error) throw error;
     return true;
   } catch (err) {
-    console.error('Failed to save settings:', err);
+    alert('Failed to save settings: ' + err);
     return false;
   }
 };
@@ -266,22 +266,22 @@ export const saveSettings = async (settings: AppSettings): Promise<boolean> => {
 // These are deprecated - use Supabase directly in components
 
 export const exportDatabase = (): string => {
-  console.warn('exportDatabase is deprecated - use Supabase exports instead');
+  alert('exportDatabase is deprecated - use Supabase exports instead');
   return JSON.stringify({ message: 'Use Supabase dashboard for data exports' });
 };
 
 export const importDatabase = (jsonString: string): { success: boolean; message: string } => {
-  console.warn('importDatabase is deprecated - use Supabase imports instead');
+  alert('importDatabase is deprecated - use Supabase imports instead');
   return { success: false, message: 'Import not supported - use Supabase restore feature' };
 };
 
 export const createAutomaticBackup = async (backupFolderPath?: string): Promise<{ success: boolean; message: string; filePath?: string }> => {
-  console.warn('createAutomaticBackup is deprecated - Supabase handles backups automatically');
+  alert('createAutomaticBackup is deprecated - Supabase handles backups automatically');
   return { success: true, message: 'Supabase provides automatic backups' };
 };
 
 export const getBackupInfo = (): { totalBackups: number; oldestBackup?: string; newestBackup?: string } => {
-  console.warn('getBackupInfo is deprecated - check Supabase dashboard for backup info');
+  alert('getBackupInfo is deprecated - check Supabase dashboard for backup info');
   return { totalBackups: 0 };
 };
 
@@ -290,7 +290,7 @@ export const saveCustomersBulk = async (newCustomers: Customer[]): Promise<void>
     const { error } = await supabase.from('customers').insert(newCustomers);
     if (error) throw error;
   } catch (err) {
-    console.error('Failed to save customers in bulk:', err);
+    alert('Failed to save customers in bulk: ' + err);
   }
 };
 
@@ -300,7 +300,7 @@ export const deleteTransaction = async (id: string): Promise<boolean> => {
     if (error) throw error;
     return true;
   } catch (err) {
-    console.error('Failed to delete transaction:', err);
+    alert('Failed to delete transaction: ' + err);
     return false;
   }
 };
