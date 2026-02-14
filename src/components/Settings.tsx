@@ -52,6 +52,7 @@ export default function Settings() {
 
       const newCust: Customer = {
         id: `${id.substring(0, 6)}${String(i).padStart(4, '0')}`, // Mocking sequence for bulk
+        customerid: `${id.substring(0, 6)}${String(i).padStart(4, '0')}`,
         name: `${names[nameIdx]} ${i}`,
         nameHindi: `${hindiNames[nameIdx]} ${i}`,
         area: area,

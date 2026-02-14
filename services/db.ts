@@ -1,5 +1,6 @@
 
 import { Customer, Transaction, CustomerStats, Area, calculateDailyCost, AppSettings } from '../types';
+import { supabase } from '../src/lib/supabase';
 
 const STORAGE_KEYS = {
   CUSTOMERS: 'ompure_customers',
@@ -101,10 +102,22 @@ export const deleteArea = (id: string) => {
 
 // --- Customer Service ---
 
-export const getCustomers = (): Customer[] => {
-  const customers = getStoredData<Customer>(STORAGE_KEYS.CUSTOMERS);
-  // Sort by ID ascending (numeric aware comparison for formatted IDs)
-  return customers.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+export const getCustomers = async (): Promise<Customer[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('customerid', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch customers: ${error.message}`);
+    }
+
+    return data as Customer[];
+  } catch (err) {
+    console.error('Error fetching customers:', err);
+    return [];
+  }
 };
 
 export const generateNextCustomerId = (dateStr: string): string => {
@@ -119,9 +132,9 @@ export const generateNextCustomerId = (dateStr: string): string => {
   let maxSeq = 0;
   // Format: YYYYMMxxxx (e.g., 2025020001)
   customers.forEach(c => {
-    // Check if ID matches format YYYYMM + 4 digits
-    if (c.id.startsWith(prefix) && c.id.length === 10) {
-        const seqPart = c.id.substring(6);
+    // Check if customerid matches format YYYYMM + 4 digits
+    if (c.customerid.startsWith(prefix) && c.customerid.length === 10) {
+        const seqPart = c.customerid.substring(6);
         const seq = parseInt(seqPart, 10);
         if (!isNaN(seq) && seq > maxSeq) {
             maxSeq = seq;
@@ -133,30 +146,64 @@ export const generateNextCustomerId = (dateStr: string): string => {
   return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
 };
 
-export const saveCustomer = (customer: Omit<Customer, 'id'> | Customer): Customer => {
-  const customers = getCustomers();
-  let newCustomer: Customer;
+export const saveCustomer = async (customer: Partial<Customer>): Promise<Customer> => {
+  try {
+    // For new customers, generate UUID for id field
+    const customerId = customer.id || crypto.randomUUID();
+    
+    const payload = {
+      id: customerId,
+      customerid: customer.customerid,
+      name: customer.name,
+      nameHindi: customer.nameHindi,
+      area: customer.area,
+      landmark: customer.landmark,
+      landmarkHindi: customer.landmarkHindi,
+      address: customer.address,
+      mobile: customer.mobile,
+      rateJar: customer.rateJar,
+      rateThermos: customer.rateThermos,
+      securityDeposit: customer.securityDeposit,
+      oldDues: customer.oldDues,
+      startDate: customer.startDate,
+    };
 
-  // Check if we are updating (ID exists in DB) or Creating
-  if ('id' in customer && customer.id) {
-    const index = customers.findIndex(c => c.id === customer.id);
-    if (index >= 0) {
-      // Update existing
-      customers[index] = customer as Customer;
-      newCustomer = customer as Customer;
+    let result;
+
+    // Check if updating or creating
+    if (customer.id && customer.id !== '') {
+      // Update existing customer
+      const { data, error } = await supabase
+        .from('customers')
+        .update(payload)
+        .eq('id', customerId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to update customer: ${error.message}`);
+      }
+      result = data;
     } else {
-      // Create new with specific ID (e.g. generated formatted ID)
-      newCustomer = customer as Customer;
-      customers.push(newCustomer);
+      // Create new customer
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to create customer: ${error.message}`);
+      }
+      result = data;
     }
-  } else {
-    // Fallback: Create with random ID if no ID provided
-    newCustomer = { ...customer, id: generateId() } as Customer;
-    customers.push(newCustomer);
+
+    return result as Customer;
+  } catch (err) {
+    console.error('Error saving customer:', err);
+    throw err;
   }
-  
-  setStoredData(STORAGE_KEYS.CUSTOMERS, customers);
-  return newCustomer;
+};
 };
 
 export const saveCustomersBulk = (newCustomers: Customer[]) => {
@@ -166,10 +213,23 @@ export const saveCustomersBulk = (newCustomers: Customer[]) => {
   setStoredData(STORAGE_KEYS.CUSTOMERS, customers);
 };
 
-export const deleteCustomer = (id: string) => {
-  const customers = getCustomers().filter(c => c.id !== id);
-  setStoredData(STORAGE_KEYS.TRANSACTIONS, getTransactions().filter(t => t.customerId !== id));
-  setStoredData(STORAGE_KEYS.CUSTOMERS, customers);
+export const deleteCustomer = async (uuid: string): Promise<boolean> => {
+  try {
+    // Delete customer from Supabase
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .eq('id', uuid);
+
+    if (error) {
+      throw new Error(`Failed to delete customer: ${error.message}`);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error deleting customer:', err);
+    throw err;
+  }
 };
 
 // --- Transaction Service ---
@@ -218,10 +278,11 @@ export const saveTransaction = (transaction: Partial<Transaction> & { customerId
 
 // --- Stats Service ---
 
-export const getCustomerStats = (customerId: string): CustomerStats => {
-  const transactions = getTransactions().filter(t => t.customerId === customerId);
+export const getCustomerStats = (uuid: string): CustomerStats => {
+  // uuid is the actual id field (UUID), not the customerid
+  const transactions = getTransactions().filter(t => t.customerId === uuid);
   const customers = getCustomers();
-  const customer = customers.find(c => c.id === customerId);
+  const customer = customers.find(c => c.id === uuid);
 
   if (!customer) return { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
 

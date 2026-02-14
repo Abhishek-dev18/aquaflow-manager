@@ -26,13 +26,43 @@ export const getCustomers = async (): Promise<Customer[]> => {
 
 export const saveCustomer = async (customer: Omit<Customer, 'id'> | Customer): Promise<Customer | null> => {
   try {
-    const isUpdate = 'id' in customer && customer.id;
-    const query = isUpdate
-      ? supabase.from('customers').update(customer).eq('id', customer.id)
-      : supabase.from('customers').insert([customer]);
-    const { data, error } = await query.select().single();
-    if (error) throw error;
-    return data;
+    const isUpdate = typeof (customer as any).id !== 'undefined' && (customer as any).id !== null && (customer as any).id !== '';
+    
+    if (isUpdate) {
+      // For updates, preserve the UUID and customerid
+      const id = (customer as Customer).id as string;
+      const { data, error } = await supabase
+        .from('customers')
+        .update(customer)
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        showAlert(`Customer with ID ${id} not found`);
+        return null;
+      }
+      return data[0];
+    } else {
+      // For inserts, generate UUID for id field
+      const customerWithId = {
+        ...customer,
+        id: (customer as any).id || crypto.randomUUID() // Generate UUID if not provided
+      };
+
+      // If customerid is empty or not provided, remove it so DB trigger can generate it
+      const insertPayload: any = { ...customerWithId };
+      if (!insertPayload.customerid) delete insertPayload.customerid;
+
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([insertPayload])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
   } catch (err) {
     showAlert('Failed to save customer: ' + err);
     return null;
@@ -177,12 +207,32 @@ export const saveTransaction = async (
     };
     const data = { ...defaults, ...transaction };
     const isUpdate = transaction.id;
-    const query = isUpdate
-      ? supabase.from('transactions').update(data).eq('id', transaction.id)
-      : supabase.from('transactions').insert([data]);
-    const { data: result, error } = await query.select().single();
-    if (error) throw error;
-    return result;
+    
+    if (isUpdate) {
+      // For updates, use a safer approach that doesn't require .single()
+      const { data: result, error } = await supabase
+        .from('transactions')
+        .update(data)
+        .eq('id', transaction.id)
+        .select();
+      
+      if (error) throw error;
+      if (!result || result.length === 0) {
+        showAlert(`Transaction with ID ${transaction.id} not found`);
+        return null;
+      }
+      return result[0];
+    } else {
+      // For inserts, .single() is safe since we're creating a new record
+      const { data: result, error } = await supabase
+        .from('transactions')
+        .insert([data])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return result;
+    }
   } catch (err) {
     showAlert('Failed to save transaction: ' + err);
     return null;
@@ -204,13 +254,33 @@ export const getAreas = async (): Promise<Area[]> => {
 
 export const saveArea = async (area: Partial<Area>): Promise<Area | null> => {
   try {
-    const isUpdate = area.id;
-    const query = isUpdate
-      ? supabase.from('areas').update(area).eq('id', area.id)
-      : supabase.from('areas').insert([area]);
-    const { data, error } = await query.select().single();
-    if (error) throw error;
-    return data;
+    const isUpdate = 'id' in area && area.id;
+    
+    if (isUpdate) {
+      // For updates, use a safer approach that doesn't require .single()
+      const { data, error } = await supabase
+        .from('areas')
+        .update(area)
+        .eq('id', area.id)
+        .select();
+      
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        showAlert(`Area with ID ${area.id} not found`);
+        return null;
+      }
+      return data[0];
+    } else {
+      // For inserts, database auto-generates UUID
+      const { data, error } = await supabase
+        .from('areas')
+        .insert([area])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
   } catch (err) {
     showAlert('Failed to save area: ' + err);
     return null;
@@ -273,11 +343,13 @@ export const exportDatabase = (): string => {
 
 export const importDatabase = (jsonString: string): { success: boolean; message: string } => {
   showAlert('importDatabase is deprecated - use Supabase imports instead');
+  void jsonString;
   return { success: false, message: 'Import not supported - use Supabase restore feature' };
 };
 
 export const createAutomaticBackup = async (backupFolderPath?: string): Promise<{ success: boolean; message: string; filePath?: string }> => {
   showAlert('createAutomaticBackup is deprecated - Supabase handles backups automatically');
+  void backupFolderPath;
   return { success: true, message: 'Supabase provides automatic backups' };
 };
 

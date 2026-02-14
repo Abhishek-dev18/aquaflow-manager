@@ -8,6 +8,7 @@ const AreaManager: React.FC = () => {
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const loadAreas = async () => {
     const areasData = await getAreas();
@@ -22,7 +23,6 @@ const AreaManager: React.FC = () => {
     e.preventDefault();
     if (newName.trim()) {
       await saveArea({ 
-        id: crypto.randomUUID(),
         name: newName.trim() 
       });
       setNewName('');
@@ -48,11 +48,20 @@ const AreaManager: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure? This will remove the area from the selection list. Existing customers will keep the old area name until manually updated.')) {
-      await deleteArea(id);
+  const handleDelete = (id: string) => {
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirm) {
+      await deleteArea(deleteConfirm);
+      setDeleteConfirm(null);
       await loadAreas();
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm(null);
   };
 
   return (
@@ -136,6 +145,44 @@ const AreaManager: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-xl max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center gap-3 rounded-t-3xl">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 size={20} className="text-red-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900">Delete Area</h2>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-5">
+              <p className="text-gray-700 leading-relaxed">
+                This will remove the area from the selection list. Existing customers will keep the old area name until manually updated.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 rounded-b-3xl">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2.5 text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors shadow-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

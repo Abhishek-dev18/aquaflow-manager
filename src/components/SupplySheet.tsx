@@ -232,11 +232,11 @@ const SupplySheet: React.FC = () => {
                 return (
                   <tr key={customer.id} className="hover:bg-brand-50/30 group transition-colors">
                     <td className="p-3 border border-brand-100">
-                      <div className="font-bold text-gray-800 text-sm font-hindi">{customer.name_hindi || customer.name}</div>
+                      <div className="font-bold text-gray-800 text-sm font-hindi">{customer.nameHindi || customer.name}</div>
                     </td>
                     
                     <td className="p-3 border border-brand-100 text-gray-500 font-hindi">
-                      {customer.landmark_hindi || customer.landmark}
+                      {customer.landmarkHindi || customer.landmark}
                     </td>
 
                     <td className="p-3 border border-brand-100 text-gray-600 font-mono text-[11px]">

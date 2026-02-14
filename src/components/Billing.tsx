@@ -241,7 +241,7 @@ const Billing: React.FC = () => {
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-gray-600 mt-1 font-medium">
                 <span>Area: <b>{billData.customer.area}</b></span>
-                {billData.customer.landmark && <span className="font-hindi">Landmark: <b>{billData.customer.landmark_hindi || billData.customer.landmark}</b></span>}
+                {billData.customer.landmark && <span className="font-hindi">Landmark: <b>{billData.customer.landmarkHindi || billData.customer.landmark}</b></span>}
                 <span>Ph: <b>{billData.customer.mobile}</b></span>
               </div>
             </div>
