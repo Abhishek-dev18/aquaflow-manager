@@ -7,7 +7,6 @@
 import React, { useState } from 'react';
 import { Lock, Mail, Droplets, ArrowRight } from 'lucide-react';
 import { loginAdmin } from '../lib/supabase';
-import { showAlert } from '../lib/alert';
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -40,7 +39,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(errorMessage);
-      showAlert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -168,8 +166,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         </div>
       </div>
 
-      <div className="absolute bottom-6 text-brand-900/20 text-xs font-semibold tracking-widest uppercase z-10">
-        Powered by Supabase
+      <div className="absolute bottom-6 text-brand-900/30 text-xs font-semibold tracking-widest uppercase z-10">
+        Made by Abhishek-dev18
       </div>
     </div>
   );
