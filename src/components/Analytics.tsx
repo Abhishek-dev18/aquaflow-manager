@@ -1,7 +1,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart3, TrendingUp, DollarSign, Package, Droplets, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
-import { getTransactions, getCustomers } from '../services/db';
+import JarLoader from './JarLoader';
+import { getTransactionsByDateRange, getCustomers } from '../services/db';
 import { Transaction, Customer } from '../types';
 
 // --- SVG CHART COMPONENTS ---
@@ -92,6 +93,7 @@ const SimpleLineChart = ({ data }: { data: { label: string, v1: number, v2: numb
 type ViewMode = 'daily' | 'monthly' | 'yearly';
 
 const Analytics: React.FC = () => {
+  const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   
@@ -99,15 +101,43 @@ const Analytics: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filterArea, setFilterArea] = useState<string>('All');
 
+  // Load customers once
   useEffect(() => {
-    const loadData = async () => {
-      const txData = await getTransactions();
-      const custData = await getCustomers();
-      setTransactions(txData);
-      setCustomers(custData);
-    };
-    loadData();
+    getCustomers().then(setCustomers);
   }, []);
+
+  // Reload transactions whenever the view period changes
+  useEffect(() => {
+    setLoading(true);
+    const toYMD = (d: Date) => d.toISOString().split('T')[0];
+
+    let startDate: string;
+    let endDate: string;
+    const y = selectedDate.getFullYear();
+    const m = selectedDate.getMonth();
+
+    if (viewMode === 'daily') {
+      // show 14-day window ending on selectedDate
+      const start = new Date(selectedDate);
+      start.setDate(start.getDate() - 13);
+      startDate = toYMD(start);
+      const end = new Date(selectedDate);
+      end.setDate(end.getDate() + 1);
+      endDate = toYMD(end);
+    } else if (viewMode === 'monthly') {
+      startDate = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+      const nextM = m === 11 ? `${y + 1}-01-01` : `${y}-${String(m + 2).padStart(2, '0')}-01`;
+      endDate = nextM;
+    } else {
+      startDate = `${y}-01-01`;
+      endDate = `${y + 1}-01-01`;
+    }
+
+    getTransactionsByDateRange(startDate, endDate).then(data => {
+      setTransactions(data);
+      setLoading(false);
+    });
+  }, [viewMode, selectedDate]);
 
   const areas = useMemo(() => ['All', ...Array.from(new Set(customers.map(c => c.area))).sort()], [customers]);
 
@@ -213,6 +243,8 @@ const Analytics: React.FC = () => {
     return Object.entries(stats).sort((a, b) => b[1].revenue - a[1].revenue);
   }, [periodTransactions, customers]);
 
+
+  if (loading) return <JarLoader />;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 pb-20">

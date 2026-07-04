@@ -1,17 +1,19 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Printer, Search, Filter, User, Calendar } from 'lucide-react';
+import { Printer, Search, Filter, Calendar, X, ChevronDown } from 'lucide-react';
 import { Customer, Transaction, calculateDailyCost, AppSettings } from '../types';
-import { getCustomers, getTransactions, getSettings } from '../services/db';
+import { getCustomers, getTransactionsByCustomerId, getSettings } from '../services/db';
 
 const Billing: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterArea, setFilterArea] = useState<string>('All');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [_txLoading, setTxLoading] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
       companyName: '',
       companyAddress: '',
@@ -19,18 +21,25 @@ const Billing: React.FC = () => {
       billFooterNote: ''
   });
 
+  // Load customers + settings once
   useEffect(() => {
     const loadData = async () => {
-      const custData = await getCustomers();
-      const txData = await getTransactions();
-      const settingsData = await getSettings();
+      const [custData, settingsData] = await Promise.all([getCustomers(), getSettings()]);
       setCustomers(custData);
-      setAllTransactions(txData);
       setSettings(settingsData);
-      
     };
     loadData();
   }, []);
+
+  // Load transactions only for the selected customer — not all 40,000 customers' history
+  useEffect(() => {
+    if (!selectedCustomerId) { setAllTransactions([]); return; }
+    setTxLoading(true);
+    getTransactionsByCustomerId(selectedCustomerId).then(data => {
+      setAllTransactions(data);
+      setTxLoading(false);
+    });
+  }, [selectedCustomerId]);
 
   // Computed
   const billData = useMemo(() => {
@@ -45,7 +54,7 @@ const Billing: React.FC = () => {
     // 1. Calculate Old Dues (Balance before this month + customer's initial old dues)
     let openingBalance = Number(customer.oldDues || 0);
     allTransactions.forEach(t => {
-      if (t.customerId === customer.id) {
+      if (t.customerId === customer.id && t.date) {
         const tDate = new Date(t.date);
         if (tDate < startOfMonth) {
           const cost = calculateDailyCost(t, customer);
@@ -56,6 +65,7 @@ const Billing: React.FC = () => {
 
     // 2. Calculate Current Month Details
     const transactionsInMonth = allTransactions.filter(t => {
+      if (!t.date) return false;
       const [tYear, tMonth] = t.date.split('-').map(Number);
       return t.customerId === customer.id && tYear === year && tMonth === month;
     });
@@ -114,16 +124,50 @@ const Billing: React.FC = () => {
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => {
-       const matchesSearch = searchTerm === '' || 
-          c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       const matchesSearch = searchTerm === '' ||
+          c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           c.mobile.includes(searchTerm) ||
+          (c.customerid || '').includes(searchTerm) ||
           c.area.toLowerCase().includes(searchTerm.toLowerCase());
-       
        const matchesArea = filterArea === 'All' || c.area === filterArea;
-
        return matchesSearch && matchesArea;
     });
   }, [customers, searchTerm, filterArea]);
+
+  // Show max 60 in dropdown; only when searchTerm or area filter is active
+  const dropdownCustomers = useMemo(
+    () => filteredCustomers.slice(0, 60),
+    [filteredCustomers]
+  );
+
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setDropdownOpen(true);
+    if (selectedCustomerId) setSelectedCustomerId('');
+  };
+
+  const handleSelectCustomer = (id: string) => {
+    setSelectedCustomerId(id);
+    setDropdownOpen(false);
+    setSearchTerm('');
+  };
+
+  const handleClearCustomer = () => {
+    setSelectedCustomerId('');
+    setSearchTerm('');
+    setDropdownOpen(false);
+  };
+
+  const handlePrint = () => {
+    if (!billData) return;
+    const originalTitle = document.title;
+    const safeName = billData.customer.name.replace(/[^\w\sऀ-ॿ]/g, '').trim();
+    document.title = `${safeName} - ${billData.monthName} ${selectedMonth.split('-')[0]}`;
+    window.print();
+    setTimeout(() => { document.title = originalTitle; }, 1000);
+  };
 
   return (
     <div className="p-6 h-full flex flex-col bg-slate-50 print:bg-white print:p-0">
@@ -162,45 +206,78 @@ const Billing: React.FC = () => {
              </div>
           </div>
 
+          {/* Customer Combobox */}
           <div className="flex-1 min-w-[280px] max-w-lg">
-             <label className="block text-xs font-medium text-gray-500 mb-1">Find & Select Customer</label>
-             <div className="flex flex-col rounded-lg overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-brand-500/10 focus-within:border-brand-500 transition-all bg-white">
-               <div className="relative border-b border-gray-100">
-                  <input 
-                    type="text" 
-                    placeholder="Filter by name or mobile..." 
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full p-2 pl-9 text-sm bg-white focus:bg-white outline-none placeholder-gray-400 text-gray-700"
-                  />
-                  <Search size={14} className="absolute left-3 top-3 text-gray-400" />
-               </div>
-               
-               <div className="relative">
-                 <select 
-                    value={selectedCustomerId}
-                    onChange={e => setSelectedCustomerId(e.target.value)}
-                    className="w-full p-2 pl-9 text-sm bg-white focus:bg-white outline-none appearance-none cursor-pointer text-gray-700"
-                  >
-                    <option value="" disabled>Select a customer...</option>
-                    {filteredCustomers.length === 0 ? (
-                       <option disabled>No customers found matching filter</option>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Find & Select Customer</label>
+            <div className="relative">
+              <div className={`flex items-center border rounded-lg bg-white transition-all ${dropdownOpen ? 'ring-2 ring-brand-500/20 border-brand-500' : 'border-gray-200'}`}>
+                <Search size={14} className="ml-3 text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder={selectedCustomer ? selectedCustomer.name : "Type name, mobile or ID..."}
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={() => setDropdownOpen(true)}
+                  className="flex-1 p-2.5 pl-2 text-sm bg-transparent outline-none placeholder-gray-400 text-gray-700 min-w-0"
+                />
+                {selectedCustomer && !dropdownOpen ? (
+                  <button onClick={handleClearCustomer} className="mr-2 p-1 text-gray-400 hover:text-red-500 rounded transition-colors">
+                    <X size={14} />
+                  </button>
+                ) : (
+                  <ChevronDown size={14} className="mr-3 text-gray-400 shrink-0" />
+                )}
+              </div>
+
+              {/* Selected customer pill */}
+              {selectedCustomer && !dropdownOpen && (
+                <div className="mt-1 px-3 py-1.5 bg-brand-50 border border-brand-100 rounded-lg text-xs text-brand-700 font-medium truncate">
+                  {selectedCustomer.name} — {selectedCustomer.area} {selectedCustomer.customerid ? `(#${selectedCustomer.customerid})` : ''}
+                </div>
+              )}
+
+              {/* Dropdown */}
+              {dropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                  <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-20">
+                    {!searchTerm.trim() && filterArea === 'All' ? (
+                      <p className="p-4 text-center text-sm text-gray-400">Type a name, mobile number, or ID to search</p>
+                    ) : dropdownCustomers.length === 0 ? (
+                      <p className="p-4 text-center text-sm text-gray-400">No customers found</p>
                     ) : (
-                      filteredCustomers.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} - {c.area} ({c.id})
-                        </option>
-                      ))
+                      <>
+                        {dropdownCustomers.map(c => (
+                          <button
+                            key={c.id}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSelectCustomer(c.id)}
+                            className={`w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors border-b border-gray-50 last:border-0 ${c.id === selectedCustomerId ? 'bg-brand-50' : ''}`}
+                          >
+                            <div className="font-semibold text-gray-800 text-sm">{c.name}</div>
+                            <div className="text-xs text-gray-400 mt-0.5 flex gap-2">
+                              <span>{c.area}</span>
+                              {c.customerid && <span>#{c.customerid}</span>}
+                              {c.mobile && <span>{c.mobile}</span>}
+                            </div>
+                          </button>
+                        ))}
+                        {filteredCustomers.length > 60 && (
+                          <p className="px-4 py-2 text-[10px] text-gray-400 text-center bg-gray-50">
+                            Showing 60 of {filteredCustomers.length} — type more to narrow down
+                          </p>
+                        )}
+                      </>
                     )}
-                  </select>
-                  <User size={14} className="absolute left-3 top-3 text-brand-500 pointer-events-none" />
-               </div>
-             </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex items-end h-full pb-1">
-            <button 
-              onClick={() => window.print()} 
+            <button
+              onClick={handlePrint}
               disabled={!billData}
               className="bg-brand-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all whitespace-nowrap"
             >

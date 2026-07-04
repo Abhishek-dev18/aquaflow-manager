@@ -2,10 +2,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Filter, Save, AlertCircle } from 'lucide-react';
 import { Customer, Transaction, CustomerStats, calculateDailyCost } from '../types';
-import { getCustomers, getTransactions, saveTransaction } from '../services/db';
+import { getCustomers, getTransactionsByDate, saveTransaction, getAllCustomerStats } from '../services/db';
 import { showAlert } from '../lib/alert';
 
-const SupplySheet: React.FC = () => {
+interface SupplySheetProps {
+  onDirtyChange?: (dirty: boolean) => void;
+}
+
+const SupplySheet: React.FC<SupplySheetProps> = ({ onDirtyChange }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   
@@ -25,9 +29,8 @@ const SupplySheet: React.FC = () => {
     const loadedCustomers = await getCustomers();
     setCustomers(loadedCustomers);
     
-    // 2. Load Transactions for Date
-    const allTransactions = await getTransactions();
-    const txs = allTransactions.filter(t => t.date?.startsWith(date));
+    // 2. Load only today's transactions — server-side date filter
+    const txs = await getTransactionsByDate(date);
     const txMap: Record<string, Transaction> = {};
     
     txs.forEach(t => {
@@ -39,9 +42,9 @@ const SupplySheet: React.FC = () => {
     setTransactions(JSON.parse(JSON.stringify(txMap))); // Deep copy for editing
     setOriginalTransactions(JSON.parse(JSON.stringify(txMap))); // Deep copy for comparison
 
-    // 3. Load Base Stats (Snapshot before current day's edit)
-    const newStats: Record<string, CustomerStats> = {};
-    setBaseStats(newStats);
+    // 3. Load Base Stats — used for projected due/balance display
+    const statsMap = await getAllCustomerStats();
+    setBaseStats(statsMap);
     setHasUnsavedChanges(false);
   };
 
@@ -70,17 +73,45 @@ const SupplySheet: React.FC = () => {
       }
     }));
     setHasUnsavedChanges(true);
+    onDirtyChange?.(true);
   };
 
+  // Warn on browser close/refresh when there are unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
+
   const handleSave = async () => {
-    // Save all dirty transactions
-    for (const tx of Object.values(transactions)) {
-      await saveTransaction(tx as Transaction);
+    const isAllZero = (tx: Partial<Transaction>) =>
+      !tx.jarsDelivered && !tx.jarsReturned && !tx.thermosDelivered && !tx.thermosReturned && !tx.paymentAmount;
+
+    // Only save transactions that have data or that already exist in DB (to allow clearing)
+    const toSave = Object.values(transactions).filter(tx => {
+      const orig = originalTransactions[tx.customerId];
+      if (orig?.id) return true;          // existing DB record — always sync
+      return !isAllZero(tx);              // new record — skip if all zeros
+    });
+
+    let failed = 0;
+    for (const tx of toSave) {
+      const result = await saveTransaction(tx as Transaction);
+      if (!result) failed++;
     }
-    
-    // Reload to refresh stats and sync states
+
     await loadData();
-    showAlert("Supply sheet saved successfully!", 'success');
+    if (failed > 0) {
+      showAlert(`Saved with ${failed} error(s). Please check and retry.`);
+    } else {
+      showAlert('Supply sheet saved successfully!', 'success');
+    }
+    onDirtyChange?.(false);
   };
 
   // Helper to project stats based on unsaved inputs

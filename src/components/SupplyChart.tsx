@@ -201,10 +201,7 @@ const SupplyChart: React.FC = () => {
             justify-content: space-between !important;
             flex-wrap: nowrap !important;
           }
-          /* Ensure layout doesn't break table pagination */
-          .flex, .flex-col { display: block !important; }
-          
-          table { 
+          table {
             width: 100% !important; 
             border-collapse: collapse !important; 
             table-layout: fixed !important;

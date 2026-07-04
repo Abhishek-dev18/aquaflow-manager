@@ -45,7 +45,6 @@ export interface AppSettings {
   companyAddress: string;
   companyMobile: string;
   billFooterNote: string;
-  autoBackupPath?: string;  // Path for Automatic Backups
 }
 
 export const calculateDailyCost = (t: Transaction, c: Customer): number => {

@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Wallet, IndianRupee, User, Calendar, CheckCircle2, ArrowRight, X, Clock } from 'lucide-react';
+import JarLoader from './JarLoader';
 import { Customer, Transaction, CustomerStats } from '../types';
-import { getCustomers, getAreas, saveTransaction, getAllCustomerStats, getTransactions } from '../services/db';
+import { getCustomers, getAreas, saveTransaction, getAllCustomerStats, getTransactionsByDate, getRecentPayments } from '../services/db';
 import { showAlert } from '../lib/alert';
 
 const PaymentCollection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterArea, setFilterArea] = useState('All');
+  const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [areas, setAreas] = useState<string[]>([]);
   const [customerStats, setCustomerStats] = useState<Record<string, CustomerStats>>({});
@@ -27,26 +29,20 @@ const PaymentCollection: React.FC = () => {
       setAreas(['All', ...areaList.map(a => a.name)]);
       setCustomerStats(statsMap);
       await loadRecentPayments(custList);
+      setLoading(false);
     };
     loadData();
   }, []);
 
   const loadRecentPayments = async (custList?: Customer[]) => {
-    const allTxs = await getTransactions();
+    // Server-side sort + limit — no full-table scan
+    const recentTxs = await getRecentPayments(5);
     const customers = custList || await getCustomers();
     const custMap = Object.fromEntries(customers.map(c => [c.id, c]));
-    
-    // Get last 5 payments
-    const payments = allTxs
-      .filter(t => (t.paymentAmount || 0) > 0)
-      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-      .slice(0, 5)
-      .map(t => ({
-        ...t,
-        customerName: custMap[t.customerId]?.name || 'Unknown'
-      }));
-    
-    setRecentPayments(payments);
+    setRecentPayments(recentTxs.map(t => ({
+      ...t,
+      customerName: custMap[t.customerId]?.name || 'Unknown'
+    })));
   };
 
   const filteredCustomers = useMemo(() => {
@@ -69,9 +65,9 @@ const PaymentCollection: React.FC = () => {
       return;
     }
 
-    // Existing transaction on same date?
-    const allTxs = await getTransactions();
-    const existingTxs = allTxs.find(t => t.customerId === selectedCustomer.id && t.date === paymentDate);
+    // Find existing transaction on same date — targeted query, not full-table scan
+    const dayTxs = await getTransactionsByDate(paymentDate);
+    const existingTxs = dayTxs.find(t => t.customerId === selectedCustomer.id);
 
     const payload: Partial<Transaction> & { customerId: string; date: string } = {
       customerId: selectedCustomer.id,
@@ -97,6 +93,8 @@ const PaymentCollection: React.FC = () => {
   const getStats = (id: string): CustomerStats => {
     return customerStats[id] || { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
   };
+
+  if (loading) return <JarLoader />;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -164,7 +162,7 @@ const PaymentCollection: React.FC = () => {
                   <div key={c.id} className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <div className="text-[10px] text-brand-500 font-mono font-bold mb-1">#{c.id}</div>
+                        <div className="text-[10px] text-brand-500 font-mono font-bold mb-1">#{c.customerid}</div>
                         <h3 className="font-bold text-gray-800 leading-tight group-hover:text-brand-600 transition-colors">{c.name}</h3>
                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1 font-hindi">{c.nameHindi}</p>
                       </div>
@@ -239,6 +237,7 @@ const PaymentCollection: React.FC = () => {
                          type="number"
                          required
                          autoFocus
+                         min="0"
                          placeholder="0.00"
                          className="w-full pl-10 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none font-black text-xl text-brand-700"
                          value={paymentAmount}

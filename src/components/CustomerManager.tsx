@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, MapPin, Phone, Package, AlertCircle, Hash, Languages, CheckCircle } from 'lucide-react';
+import JarLoader from './JarLoader';
 import { Customer, Area } from '../types';
-import { getCustomers, saveCustomer, deleteCustomer, getCustomerStats, getAreas } from '../services/db';
+import { getCustomers, saveCustomer, deleteCustomer, getAllCustomerStats, getAreas } from '../services/db';
 import { showAlert } from '../lib/alert';
 
 const CustomerManager: React.FC = () => {
+  const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,20 +39,13 @@ const CustomerManager: React.FC = () => {
     setCustomers(data);
     setAreas(areasData || []);
 
-    // Load stats for all customers in parallel
     try {
-      const statsArr = await Promise.all(data.map(async (c) => {
-        const s = await getCustomerStats(c.id);
-        return { id: c.id, stats: s };
-      }));
-      const newStats: Record<string, any> = {};
-      statsArr.forEach(item => {
-        newStats[item.id] = item.stats;
-      });
+      const newStats = await getAllCustomerStats();
       setStats(newStats);
     } catch (err) {
       setStats({});
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -140,7 +135,9 @@ const CustomerManager: React.FC = () => {
       await saveCustomer(cleanPayload as Customer);
       // Determine if it's a new customer or update
       const isNewCustomer = !editingId;
-      const notificationMessage = isNewCustomer ? 'Customer Added' : 'Customer Updated';
+      const notificationMessage = isNewCustomer
+        ? `${cleanPayload.name} Added`
+        : `${cleanPayload.name} Updated`;
       
       showNotification(notificationMessage, 'success');
       setIsModalOpen(false);
@@ -168,8 +165,9 @@ const CustomerManager: React.FC = () => {
   const confirmDelete = async () => {
     if (deleteConfirmId) {
       try {
+        const name = customers.find(c => c.id === deleteConfirmId)?.name || 'Customer';
         await deleteCustomer(deleteConfirmId);
-        showNotification('Customer Deleted', 'success');
+        showNotification(`${name} Deleted`, 'success');
         setDeleteConfirmId(null);
         await loadData();
       } catch (err) {
@@ -216,6 +214,8 @@ const CustomerManager: React.FC = () => {
     acc[area].push(curr);
     return acc;
   }, {} as Record<string, Customer[]>);
+
+  if (loading) return <JarLoader />;
 
   return (
     <div className="p-6">
@@ -402,10 +402,10 @@ const CustomerManager: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Mobile</label>
-                  <input required type="text"
+                  <input required type="tel" inputMode="numeric" maxLength={10} pattern="[0-9]{10}"
                     className="w-full rounded-lg border-gray-300 bg-white shadow-sm border p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all placeholder-gray-300"
                     placeholder="10 digit number"
-                    value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} />
+                    value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g, '')})} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Area</label>
@@ -463,7 +463,7 @@ const CustomerManager: React.FC = () => {
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Jar Rate</label>
                     <div className="relative group">
                       <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
-                      <input type="number"
+                      <input type="number" min="0"
                         className="pl-6 w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700"
                         value={formData.rateJar || 20} onChange={e => setFormData({...formData, rateJar: Number(e.target.value)})} />
                     </div>
@@ -472,7 +472,7 @@ const CustomerManager: React.FC = () => {
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Thermos Rate</label>
                     <div className="relative group">
                       <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
-                      <input type="number"
+                      <input type="number" min="0"
                         className="pl-6 w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700"
                         value={formData.rateThermos || 20} onChange={e => setFormData({...formData, rateThermos: Number(e.target.value)})} />
                     </div>
@@ -481,14 +481,14 @@ const CustomerManager: React.FC = () => {
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Security</label>
                     <div className="relative group">
                       <span className="absolute left-3 top-2.5 text-gray-400 text-xs">₹</span>
-                      <input type="number"
+                      <input type="number" min="0"
                         className="pl-6 w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700"
                         value={formData.securityDeposit || 0} onChange={e => setFormData({...formData, securityDeposit: Number(e.target.value)})} />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Old Dues</label>
-                    <input type="number"
+                    <input type="number" min="0"
                       className="w-full rounded-lg border-gray-200 bg-white border p-2 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all font-medium text-gray-700"
                       value={formData.oldDues || 0} onChange={e => setFormData({...formData, oldDues: Number(e.target.value)})} />
                   </div>

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, ClipboardList, Receipt, LayoutDashboard, Menu, MapPin, Settings as SettingsIcon, FileSpreadsheet, BarChart3, LogOut, Wallet } from 'lucide-react';
+import { Users, ClipboardList, Receipt, LayoutDashboard, Menu, MapPin, Settings as SettingsIcon, FileSpreadsheet, BarChart3, LogOut, Wallet, Droplets } from 'lucide-react';
 import CustomerManager from './components/CustomerManager';
 import SupplySheet from './components/SupplySheet';
 import Billing from './components/Billing';
@@ -18,6 +18,9 @@ import Analytics from './components/Analytics';
 import Login from './components/Login';
 import PaymentCollection from './components/PaymentCollection';
 import Alert, { AlertType, setAlertCallback } from './components/Alert';
+import ConfirmModal, { ConfirmConfig } from './components/ConfirmModal';
+import JarLoader from './components/JarLoader';
+import { setConfirmCallback, showConfirm } from './lib/confirm';
 import { useAuth } from './lib/auth';
 import { logoutUser } from './lib/supabase';
 
@@ -25,13 +28,29 @@ import { logoutUser } from './lib/supabase';
 type Page = 'dashboard' | 'analytics' | 'supply' | 'billing' | 'payments' | 'customers' | 'areas' | 'settings' | 'chart';
 
 const App: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, session } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [supplySheetDirty, setSupplySheetDirty] = useState(false);
+  const [showEmailPopover, setShowEmailPopover] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{ message: string; type: AlertType; onClose: () => void } | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<ConfirmConfig | null>(null);
+
+  const handleNavigate = async (page: Page) => {
+    if (currentPage === 'supply' && supplySheetDirty && page !== 'supply') {
+      const confirmed = await showConfirm(
+        'You have unsaved changes on the Supply Sheet. They will be lost if you leave now.',
+        { title: 'Unsaved Changes', confirmLabel: 'Leave Anyway', cancelLabel: 'Stay', danger: true }
+      );
+      if (!confirmed) return;
+    }
+    setCurrentPage(page);
+    setSidebarOpen(false);
+  };
 
   useEffect(() => {
     setAlertCallback((config) => setAlertConfig(config));
+    setConfirmCallback((config) => setConfirmConfig(config));
   }, []);
 
   const handleLogout = async () => {
@@ -50,10 +69,7 @@ const App: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-medium">Loading...</p>
-        </div>
+        <JarLoader message="Starting AquaFlow…" />
       </div>
     );
   }
@@ -65,7 +81,7 @@ const App: React.FC = () => {
 
   const NavItem = ({ page, icon: Icon, label }: { page: Page, icon: any, label: string }) => (
     <button
-      onClick={() => { setCurrentPage(page); setSidebarOpen(false); }}
+      onClick={() => handleNavigate(page)}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
         currentPage === page ? 'bg-brand-600 text-white shadow-md' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-600'
       }`}
@@ -86,6 +102,15 @@ const App: React.FC = () => {
         />
       )}
 
+      {/* Confirm Modal */}
+      {confirmConfig && (
+        <ConfirmModal
+          {...confirmConfig}
+          onConfirm={() => { confirmConfig.onConfirm(); setConfirmConfig(null); }}
+          onCancel={() => { confirmConfig.onCancel(); setConfirmConfig(null); }}
+        />
+      )}
+
       {/* Sidebar - Mobile Responsive */}
       <div className={`
         fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out shadow-lg md:shadow-none
@@ -94,8 +119,10 @@ const App: React.FC = () => {
       `}>
         <div className="h-16 flex items-center px-6 border-b border-gray-100 bg-white">
           <span className="text-xl font-bold text-brand-600 flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">A</div>
-            AquaFlow Manager
+            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">
+              <Droplets size={18} />
+            </div>
+            AquaFlow
           </span>
         </div>
         <div className="p-4 space-y-1 flex flex-col h-[calc(100%-4rem)] overflow-y-auto">
@@ -142,8 +169,24 @@ const App: React.FC = () => {
             <Menu size={24} />
           </button>
           <div className="flex-1"></div>
-          <div className="text-sm text-slate-600">
-            Authenticated User
+          {/* Email avatar */}
+          <div className="relative">
+            <button
+              onClick={() => setShowEmailPopover(v => !v)}
+              className="w-9 h-9 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm flex items-center justify-center transition-colors shadow-sm"
+              title={session?.user?.email ?? 'Admin'}
+            >
+              {(session?.user?.email?.[0] ?? 'A').toUpperCase()}
+            </button>
+            {showEmailPopover && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowEmailPopover(false)} />
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-4 w-64 z-50">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Signed in as</p>
+                  <p className="text-sm text-gray-700 font-medium break-all">{session?.user?.email ?? '—'}</p>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
@@ -152,7 +195,7 @@ const App: React.FC = () => {
           {currentPage === 'analytics' && <Analytics />}
           {currentPage === 'customers' && <CustomerManager />}
           {currentPage === 'areas' && <AreaManager />}
-          {currentPage === 'supply' && <SupplySheet />}
+          {currentPage === 'supply' && <SupplySheet onDirtyChange={setSupplySheetDirty} />}
           {currentPage === 'chart' && <SupplyChart />}
           {currentPage === 'billing' && <Billing />}
           {currentPage === 'payments' && <PaymentCollection />}

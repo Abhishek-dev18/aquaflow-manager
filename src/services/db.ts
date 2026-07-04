@@ -80,22 +80,48 @@ export const deleteCustomer = async (id: string): Promise<boolean> => {
   }
 };
 
+export const getCustomerCount = async (): Promise<number> => {
+  try {
+    const { count, error } = await supabase
+      .from('customers').select('id', { count: 'exact', head: true });
+    if (error) throw error;
+    return count ?? 0;
+  } catch (err) {
+    showAlert('Failed to count customers: ' + err);
+    return 0;
+  }
+};
+
+export const getCustomersByArea = async (area: string): Promise<Customer[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('customers').select('*').eq('area', area).order('id', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    showAlert('Failed to fetch customers by area: ' + err);
+    return [];
+  }
+};
+
 export const generateNextCustomerId = async (dateStr: string): Promise<string> => {
   try {
-    const customers = await getCustomers();
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return '';
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const prefix = `${year}${month}`;
-    let maxSeq = 0;
-    customers.forEach(c => {
-      if (c.customerid && c.customerid.startsWith(prefix) && c.customerid.length === 10) {
-        const seq = parseInt(c.customerid.substring(6), 10);
-        if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
-      }
-    });
-    return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+    // Single targeted query — no need to load all customers
+    const { data, error } = await supabase
+      .from('customers').select('customerid')
+      .like('customerid', `${prefix}%`)
+      .order('customerid', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    const maxSeq = data?.[0]?.customerid
+      ? parseInt(data[0].customerid.substring(6), 10)
+      : 0;
+    return `${prefix}${String((isNaN(maxSeq) ? 0 : maxSeq) + 1).padStart(4, '0')}`;
   } catch (err) {
     showAlert('Failed to generate customer ID: ' + err);
     return '';
@@ -104,17 +130,19 @@ export const generateNextCustomerId = async (dateStr: string): Promise<string> =
 
 export const getCustomerStats = async (customerId: string): Promise<CustomerStats> => {
   try {
-    const transactions = await getTransactionsByCustomerId(customerId);
-    const customers = await getCustomers();
-    const customer = customers.find(c => c.id === customerId);
+    // Fetch customer and their transactions in parallel — 2 queries, not N
+    const [{ data: customerData }, transactions] = await Promise.all([
+      supabase.from('customers').select('*').eq('id', customerId).single(),
+      getTransactionsByCustomerId(customerId),
+    ]);
+    const customer = customerData as Customer | null;
     if (!customer) return { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
-    
+
     let jarBal = 0, thermosBal = 0, due = Number(customer.oldDues || 0);
     transactions.forEach(t => {
       jarBal += (t.jarsDelivered - t.jarsReturned);
       thermosBal += (t.thermosDelivered - t.thermosReturned);
-      const cost = calculateDailyCost(t, customer);
-      due += (cost - t.paymentAmount);
+      due += calculateDailyCost(t, customer) - (t.paymentAmount || 0);
     });
     return { currentJarBalance: jarBal, currentThermosBalance: thermosBal, totalDue: due };
   } catch (err) {
@@ -125,11 +153,29 @@ export const getCustomerStats = async (customerId: string): Promise<CustomerStat
 
 export const getAllCustomerStats = async (): Promise<Record<string, CustomerStats>> => {
   try {
-    const customers = await getCustomers();
+    // 2 queries total — fetch everything, compute in-memory
+    const [customers, allTransactions] = await Promise.all([
+      getCustomers(),
+      getTransactions(),
+    ]);
+
+    const txByCustomer: Record<string, Transaction[]> = {};
+    allTransactions.forEach(t => {
+      if (!txByCustomer[t.customerId]) txByCustomer[t.customerId] = [];
+      txByCustomer[t.customerId].push(t);
+    });
+
     const stats: Record<string, CustomerStats> = {};
-    for (const c of customers) {
-      stats[c.id] = await getCustomerStats(c.id);
-    }
+    customers.forEach(customer => {
+      const txs = txByCustomer[customer.id] || [];
+      let jarBal = 0, thermosBal = 0, due = Number(customer.oldDues || 0);
+      txs.forEach(t => {
+        jarBal += (t.jarsDelivered - t.jarsReturned);
+        thermosBal += (t.thermosDelivered - t.thermosReturned);
+        due += calculateDailyCost(t, customer) - (t.paymentAmount || 0);
+      });
+      stats[customer.id] = { currentJarBalance: jarBal, currentThermosBalance: thermosBal, totalDue: due };
+    });
     return stats;
   } catch (err) {
     showAlert('Failed to get all customer stats: ' + err);
@@ -168,6 +214,36 @@ export const getTransactionsByDate = async (date: string): Promise<Transaction[]
     return data || [];
   } catch (err) {
     showAlert('Failed to fetch transactions by date: ' + err);
+    return [];
+  }
+};
+
+export const getTransactionsByDateRange = async (startDate: string, endDate: string): Promise<Transaction[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('transactions').select('*')
+      .gte('date', startDate)
+      .lt('date', endDate)
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    showAlert('Failed to fetch transactions by date range: ' + err);
+    return [];
+  }
+};
+
+export const getRecentPayments = async (limit: number): Promise<Transaction[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('transactions').select('*')
+      .gt('paymentAmount', 0)
+      .order('date', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    showAlert('Failed to fetch recent payments: ' + err);
     return [];
   }
 };
@@ -223,10 +299,11 @@ export const saveTransaction = async (
       }
       return result[0];
     } else {
-      // For inserts, .single() is safe since we're creating a new record
+      // Strip empty id so DB generates the UUID
+      const { id: _id, ...insertData } = data;
       const { data: result, error } = await supabase
         .from('transactions')
-        .insert([data])
+        .insert([insertData])
         .select()
         .single();
       
@@ -333,29 +410,35 @@ export const saveSettings = async (settings: AppSettings): Promise<boolean> => {
   }
 };
 
-// ===== STUB FUNCTIONS FOR BACKWARD COMPATIBILITY =====
-// These are deprecated - use Supabase directly in components
-
-export const exportDatabase = (): string => {
-  showAlert('exportDatabase is deprecated - use Supabase exports instead');
-  return JSON.stringify({ message: 'Use Supabase dashboard for data exports' });
+export const deleteTestCustomers = async (): Promise<number> => {
+  try {
+    const { data, error: countErr } = await supabase
+      .from('customers').select('id').like('name', 'Test Customer %');
+    if (countErr) throw countErr;
+    if (!data || data.length === 0) return 0;
+    const { error } = await supabase
+      .from('customers').delete().like('name', 'Test Customer %');
+    if (error) throw error;
+    return data.length;
+  } catch (err) {
+    showAlert('Failed to delete test customers: ' + err);
+    return 0;
+  }
 };
 
-export const importDatabase = (jsonString: string): { success: boolean; message: string } => {
-  showAlert('importDatabase is deprecated - use Supabase imports instead');
-  void jsonString;
-  return { success: false, message: 'Import not supported - use Supabase restore feature' };
-};
-
-export const createAutomaticBackup = async (backupFolderPath?: string): Promise<{ success: boolean; message: string; filePath?: string }> => {
-  showAlert('createAutomaticBackup is deprecated - Supabase handles backups automatically');
-  void backupFolderPath;
-  return { success: true, message: 'Supabase provides automatic backups' };
-};
-
-export const getBackupInfo = (): { totalBackups: number; oldestBackup?: string; newestBackup?: string } => {
-  showAlert('getBackupInfo is deprecated - check Supabase dashboard for backup info');
-  return { totalBackups: 0 };
+export const deleteAllData = async (): Promise<boolean> => {
+  try {
+    // Transactions first (cascade from customers also handles this, but be explicit)
+    await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    // Delete all customers (cascades to transactions)
+    await supabase.from('customers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    // Delete all areas
+    await supabase.from('areas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    return true;
+  } catch (err) {
+    showAlert('Failed to delete all data: ' + err);
+    return false;
+  }
 };
 
 export const saveCustomersBulk = async (newCustomers: Customer[]): Promise<void> => {

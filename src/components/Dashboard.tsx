@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Users, AlertCircle, Droplets, Package, Calendar, IndianRupee, Wallet } from 'lucide-react';
-import { getCustomers, getTransactions } from '../services/db';
-import { calculateDailyCost } from '../types';
+import JarLoader from './JarLoader';
+import { getCustomerCount, getTransactionsByDate, getTransactionsByDateRange, getAllCustomerStats } from '../services/db';
 
 const Dashboard: React.FC = () => {
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalCustomers: 0,
     totalDue: 0,
@@ -17,54 +18,44 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const loadStats = async () => {
-      const customers = await getCustomers();
-      const allTransactions = await getTransactions();
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
+      const nextMonthStart = month === 12
+        ? `${year + 1}-01-01`
+        : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
-      // Calculate Total Due across all customers
+      // 4 parallel queries — no full-table scans
+      const [totalCustomers, todaysTx, monthTx, allStats] = await Promise.all([
+        getCustomerCount(),
+        getTransactionsByDate(todayStr),
+        getTransactionsByDateRange(monthStart, nextMonthStart),
+        getAllCustomerStats(),
+      ]);
+
+      // totalDue from pre-computed stats
       let totalDue = 0;
-      for (const customer of customers) {
-        const customerTxs = allTransactions.filter(t => t.customerId === customer.id);
-        let due = Number(customer.oldDues || 0);
-        customerTxs.forEach(t => {
-          due += calculateDailyCost(t, customer) - (t.paymentAmount || 0);
-        });
-        totalDue += Math.max(0, due);
-      }
-
-      // Today's Activity
-      const todayStr = new Date().toISOString().split('T')[0];
-      const todaysTx = allTransactions.filter(t => t.date?.startsWith(todayStr));
-
-      const jarsToday = todaysTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
-      const thermosToday = todaysTx.reduce((acc, t) => acc + (t.thermosDelivered || 0), 0);
-      const paymentToday = todaysTx.reduce((acc, t) => acc + (t.paymentAmount || 0), 0);
-
-      // Monthly Activity
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const monthTx = allTransactions.filter(t => {
-        const d = new Date(t.date || '');
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      });
-
-      const jarsMonth = monthTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
-      const thermosMonth = monthTx.reduce((acc, t) => acc + (t.thermosDelivered || 0), 0);
-      const paymentMonth = monthTx.reduce((acc, t) => acc + (t.paymentAmount || 0), 0);
+      Object.values(allStats).forEach(s => { totalDue += Math.max(0, s.totalDue); });
 
       setStats({
-        totalCustomers: customers.length,
+        totalCustomers,
         totalDue,
-        jarsToday,
-        thermosToday,
-        paymentToday,
-        jarsMonth,
-        thermosMonth,
-        paymentMonth,
+        jarsToday:    todaysTx.reduce((a, t) => a + (t.jarsDelivered   || 0), 0),
+        thermosToday: todaysTx.reduce((a, t) => a + (t.thermosDelivered || 0), 0),
+        paymentToday: todaysTx.reduce((a, t) => a + (t.paymentAmount    || 0), 0),
+        jarsMonth:    monthTx.reduce((a, t) => a  + (t.jarsDelivered    || 0), 0),
+        thermosMonth: monthTx.reduce((a, t) => a  + (t.thermosDelivered || 0), 0),
+        paymentMonth: monthTx.reduce((a, t) => a  + (t.paymentAmount    || 0), 0),
       });
+      setLoading(false);
     };
 
     loadStats();
   }, []);
+
+  if (loading) return <JarLoader />;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

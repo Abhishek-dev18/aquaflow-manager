@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, MapPin, Save, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Save, X, CheckCircle } from 'lucide-react';
 import { Area } from '../types';
 import { getAreas, saveArea, deleteArea } from '../services/db';
 
@@ -9,6 +9,12 @@ const AreaManager: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [newName, setNewName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
 
   const loadAreas = async () => {
     const areasData = await getAreas();
@@ -22,11 +28,10 @@ const AreaManager: React.FC = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-      await saveArea({ 
-        name: newName.trim() 
-      });
+      await saveArea({ name: newName.trim() });
       setNewName('');
       await loadAreas();
+      showToast(`Area "${newName.trim()}" added`);
     }
   };
 
@@ -45,6 +50,7 @@ const AreaManager: React.FC = () => {
       await saveArea({ id, name: editName.trim() });
       setIsEditing(null);
       await loadAreas();
+      showToast('Area updated');
     }
   };
 
@@ -57,6 +63,7 @@ const AreaManager: React.FC = () => {
       await deleteArea(deleteConfirm);
       setDeleteConfirm(null);
       await loadAreas();
+      showToast('Area deleted');
     }
   };
 
@@ -66,6 +73,11 @@ const AreaManager: React.FC = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {toast && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 z-50">
+          <CheckCircle size={18}/> {toast}
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
