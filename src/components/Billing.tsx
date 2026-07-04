@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Printer, Search, Download, Filter, User, Hash, IndianRupee, Calendar } from 'lucide-react';
+import { Printer, Search, Filter, User, Calendar } from 'lucide-react';
 import { Customer, Transaction, calculateDailyCost, AppSettings } from '../types';
-import { getCustomers, getTransactions, getTransactionsByCustomerAndMonth, getSettings } from '../services/db';
+import { getCustomers, getTransactions, getSettings } from '../services/db';
 
 const Billing: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -18,26 +18,16 @@ const Billing: React.FC = () => {
       companyMobile: '',
       billFooterNote: ''
   });
-  
+
   useEffect(() => {
     const loadData = async () => {
       const custData = await getCustomers();
       const txData = await getTransactions();
+      const settingsData = await getSettings();
       setCustomers(custData);
       setAllTransactions(txData);
+      setSettings(settingsData);
       
-      // Add print styles to prevent blank pages
-      const style = document.createElement('style');
-      style.textContent = `
-        @media print {
-          body { margin: 0; padding: 0; }
-          .billing-container { page-break-inside: avoid; margin: 0; padding: 0; }
-          .billing-container { height: auto; min-height: auto; }
-        }
-      `;
-      document.head.appendChild(style);
-      
-      return () => document.head.removeChild(style);
     };
     loadData();
   }, []);
@@ -59,7 +49,7 @@ const Billing: React.FC = () => {
         const tDate = new Date(t.date);
         if (tDate < startOfMonth) {
           const cost = calculateDailyCost(t, customer);
-          openingBalance += (cost - (t.amount || 0));
+          openingBalance += (cost - (t.paymentAmount || 0));
         }
       }
     });
@@ -82,8 +72,8 @@ const Billing: React.FC = () => {
       const tx = transactionsInMonth.find(t => t.date === dateStr);
       
       const jars = tx?.jarsDelivered || 0;
-      const thermos = tx?.thermos_delivered || 0;
-      const paid = tx?.amount || 0;
+      const thermos = tx?.thermosDelivered || 0;
+      const paid = tx?.paymentAmount || 0;
       
       const dailyCost = (jars * customer.rateJar) + (thermos * customer.rateThermos);
       
@@ -237,7 +227,7 @@ const Billing: React.FC = () => {
               <div className="flex items-baseline gap-2">
                 <span className="text-gray-400 text-[9px] uppercase font-bold tracking-tighter">Billed To:</span>
                 <span className="font-bold text-lg text-gray-800 leading-none">{billData.customer.name}</span>
-                <span className="text-[10px] text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded font-mono font-bold">#{billData.customer.id}</span>
+                <span className="text-[10px] text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded font-mono font-bold">#{billData.customer.customerid}</span>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-gray-600 mt-1 font-medium">
                 <span>Area: <b>{billData.customer.area}</b></span>

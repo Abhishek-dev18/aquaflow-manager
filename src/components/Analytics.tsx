@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BarChart3, Calendar, TrendingUp, DollarSign, Package, Droplets, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Package, Droplets, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { getTransactions, getCustomers } from '../services/db';
 import { Transaction, Customer } from '../types';
 
@@ -208,7 +208,7 @@ const Analytics: React.FC = () => {
       if (!stats[areaName]) stats[areaName] = { revenue: 0, jars: 0, thermos: 0 };
       stats[areaName].revenue += (t.paymentAmount || 0);
       stats[areaName].jars += (t.jarsDelivered || 0);
-      stats[areaName].thermos += (t.thermos_delivered || 0);
+      stats[areaName].thermos += (t.thermosDelivered || 0);
     });
     return Object.entries(stats).sort((a, b) => b[1].revenue - a[1].revenue);
   }, [periodTransactions, customers]);

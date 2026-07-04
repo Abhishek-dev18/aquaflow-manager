@@ -90,8 +90,8 @@ export const generateNextCustomerId = async (dateStr: string): Promise<string> =
     const prefix = `${year}${month}`;
     let maxSeq = 0;
     customers.forEach(c => {
-      if (c.id.startsWith(prefix) && c.id.length === 10) {
-        const seq = parseInt(c.id.substring(6), 10);
+      if (c.customerid && c.customerid.startsWith(prefix) && c.customerid.length === 10) {
+        const seq = parseInt(c.customerid.substring(6), 10);
         if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
       }
     });

@@ -93,7 +93,6 @@ const Alert: React.FC<AlertProps> = ({
 export default Alert;
 
 // Global alert manager
-let currentAlert: { message: string; type: AlertType; resolve: () => void } | null = null;
 let alertCallback: ((config: { message: string; type: AlertType; onClose: () => void }) => void) | null = null;
 
 export const setAlertCallback = (callback: (config: { message: string; type: AlertType; onClose: () => void }) => void) => {
@@ -102,16 +101,14 @@ export const setAlertCallback = (callback: (config: { message: string; type: Ale
 
 export const showAlert = (message: string, type: AlertType = 'error') => {
   return new Promise<void>((resolve) => {
-    currentAlert = { message, type, resolve };
     if (alertCallback) {
       alertCallback({
         message,
         type,
-        onClose: () => {
-          currentAlert = null;
-          resolve();
-        }
+        onClose: () => resolve()
       });
+    } else {
+      resolve();
     }
   });
 };

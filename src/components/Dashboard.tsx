@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader, TrendingUp, Users, AlertCircle, Droplets, Package, Calendar, IndianRupee, Wallet } from 'lucide-react';
-import { getCustomers, getTransactions, getTransactionsByDate, getAllCustomerStats } from '../services/db';
-import { Customer, Transaction, CustomerStats } from '../types';
+import { TrendingUp, Users, AlertCircle, Droplets, Package, Calendar, IndianRupee, Wallet } from 'lucide-react';
+import { getCustomers, getTransactions } from '../services/db';
+import { calculateDailyCost } from '../types';
 
 const Dashboard: React.FC = () => {
-  const [insight, setInsight] = useState<string>('');
-  const [loadingAi, setLoadingAi] = useState(false);
-  
-  // Stats State
   const [stats, setStats] = useState({
     totalCustomers: 0,
     totalDue: 0,
@@ -17,30 +13,32 @@ const Dashboard: React.FC = () => {
     jarsMonth: 0,
     thermosMonth: 0,
     paymentMonth: 0,
-    activeCustomers: 0
   });
 
   useEffect(() => {
     const loadStats = async () => {
       const customers = await getCustomers();
       const allTransactions = await getTransactions();
-      
-      // Calculate Total Due
+
+      // Calculate Total Due across all customers
       let totalDue = 0;
       for (const customer of customers) {
         const customerTxs = allTransactions.filter(t => t.customerId === customer.id);
-        const paid = customerTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
-        totalDue += Math.max(0, (customer.balance || 0) - paid);
+        let due = Number(customer.oldDues || 0);
+        customerTxs.forEach(t => {
+          due += calculateDailyCost(t, customer) - (t.paymentAmount || 0);
+        });
+        totalDue += Math.max(0, due);
       }
-      
+
       // Today's Activity
       const todayStr = new Date().toISOString().split('T')[0];
       const todaysTx = allTransactions.filter(t => t.date?.startsWith(todayStr));
-      
+
       const jarsToday = todaysTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
-      const thermosToday = todaysTx.reduce((acc, t) => acc + (t.thermos_delivered || 0), 0);
-      const paymentToday = todaysTx.reduce((acc, t) => acc + (t.amount || 0), 0);
-      
+      const thermosToday = todaysTx.reduce((acc, t) => acc + (t.thermosDelivered || 0), 0);
+      const paymentToday = todaysTx.reduce((acc, t) => acc + (t.paymentAmount || 0), 0);
+
       // Monthly Activity
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
@@ -50,8 +48,8 @@ const Dashboard: React.FC = () => {
       });
 
       const jarsMonth = monthTx.reduce((acc, t) => acc + (t.jarsDelivered || 0), 0);
-      const thermosMonth = monthTx.reduce((acc, t) => acc + (t.thermos_delivered || 0), 0);
-      const paymentMonth = monthTx.reduce((acc, t) => acc + (t.amount || 0), 0);
+      const thermosMonth = monthTx.reduce((acc, t) => acc + (t.thermosDelivered || 0), 0);
+      const paymentMonth = monthTx.reduce((acc, t) => acc + (t.paymentAmount || 0), 0);
 
       setStats({
         totalCustomers: customers.length,
@@ -62,25 +60,11 @@ const Dashboard: React.FC = () => {
         jarsMonth,
         thermosMonth,
         paymentMonth,
-        activeCustomers: customers.length
       });
     };
-    
+
     loadStats();
   }, []);
-
-  const handleGenerateInsight = async () => {
-    setLoadingAi(true);
-    const customers = getCustomers();
-    const transactions = getTransactions();
-    
-    // Safety check for API key
-    if (!process.env.API_KEY) {
-       setInsight("API Key configuration required for AI analysis.");
-       setLoadingAi(false);
-       return;
-    }
-  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

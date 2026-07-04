@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Filter, Save, AlertCircle } from 'lucide-react';
-import { Customer, Transaction, CustomerStats, calculateDailyCost, AppSettings } from '../types';
+import { Customer, Transaction, CustomerStats, calculateDailyCost } from '../types';
 import { getCustomers, getTransactions, saveTransaction } from '../services/db';
+import { showAlert } from '../lib/alert';
 
 const SupplySheet: React.FC = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -13,13 +14,6 @@ const SupplySheet: React.FC = () => {
   const [originalTransactions, setOriginalTransactions] = useState<Record<string, Transaction>>({});
   const [baseStats, setBaseStats] = useState<Record<string, CustomerStats>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [settings, setSettings] = useState<AppSettings>({
-    companyName: '',
-    companyAddress: '',
-    companyMobile: '',
-    billFooterNote: ''
-  });
-  
   const [filterArea, setFilterArea] = useState<string>('');
 
   useEffect(() => {
@@ -86,7 +80,7 @@ const SupplySheet: React.FC = () => {
     
     // Reload to refresh stats and sync states
     await loadData();
-    alert("Supply sheet saved successfully!");
+    showAlert("Supply sheet saved successfully!", 'success');
   };
 
   // Helper to project stats based on unsaved inputs
@@ -282,8 +276,8 @@ const SupplySheet: React.FC = () => {
                        <input 
                         type="number" min="0" placeholder="-"
                         className="w-full h-full p-2 text-center focus:ring-2 focus:ring-inset focus:ring-green-500 outline-none bg-transparent font-bold text-green-700 placeholder-gray-300"
-                        value={tx.amount === 0 ? '' : tx.amount}
-                        onChange={(e) => handleInputChange(customer.id, 'amount', e.target.value)}
+                        value={tx.paymentAmount === 0 ? '' : tx.paymentAmount}
+                        onChange={(e) => handleInputChange(customer.id, 'paymentAmount', e.target.value)}
                       />
                     </td>
 

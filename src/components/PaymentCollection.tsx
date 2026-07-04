@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Wallet, IndianRupee, User, Calendar, CheckCircle2, ArrowRight, X, Clock } from 'lucide-react';
 import { Customer, Transaction, CustomerStats } from '../types';
-import { getCustomers, getAreas, saveTransaction, getCustomerStats, getTransactions } from '../services/db';
+import { getCustomers, getAreas, saveTransaction, getAllCustomerStats, getTransactions } from '../services/db';
+import { showAlert } from '../lib/alert';
 
 const PaymentCollection: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterArea, setFilterArea] = useState('All');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [areas, setAreas] = useState<string[]>([]);
+  const [customerStats, setCustomerStats] = useState<Record<string, CustomerStats>>({});
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -19,8 +21,11 @@ const PaymentCollection: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       const custList = await getCustomers();
+      const areaList = await getAreas();
+      const statsMap = await getAllCustomerStats();
       setCustomers(custList);
-      setAreas(['All']);
+      setAreas(['All', ...areaList.map(a => a.name)]);
+      setCustomerStats(statsMap);
       await loadRecentPayments(custList);
     };
     loadData();
@@ -33,7 +38,7 @@ const PaymentCollection: React.FC = () => {
     
     // Get last 5 payments
     const payments = allTxs
-      .filter(t => (t.amount || 0) > 0)
+      .filter(t => (t.paymentAmount || 0) > 0)
       .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
       .slice(0, 5)
       .map(t => ({
@@ -60,7 +65,7 @@ const PaymentCollection: React.FC = () => {
 
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid amount.");
+      showAlert("Please enter a valid amount.");
       return;
     }
 
@@ -71,7 +76,7 @@ const PaymentCollection: React.FC = () => {
     const payload: Partial<Transaction> & { customerId: string; date: string } = {
       customerId: selectedCustomer.id,
       date: paymentDate,
-      amount: (existingTxs?.amount || 0) + amount
+      paymentAmount: (existingTxs?.paymentAmount || 0) + amount
     };
 
     await saveTransaction(payload);
@@ -80,15 +85,17 @@ const PaymentCollection: React.FC = () => {
     setShowSuccess(true);
     setPaymentAmount('');
     setSelectedCustomer(null);
-    await loadRecentPayments();
     const custList = await getCustomers();
-    setCustomers(custList); // Refresh balances
+    const statsMap = await getAllCustomerStats();
+    setCustomers(custList);
+    setCustomerStats(statsMap);
+    await loadRecentPayments(custList);
 
     setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const getStats = (id: string): CustomerStats => {
-    return getCustomerStats(id);
+    return customerStats[id] || { currentJarBalance: 0, currentThermosBalance: 0, totalDue: 0 };
   };
 
   return (
@@ -110,7 +117,7 @@ const PaymentCollection: React.FC = () => {
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Last Payment</p>
             {recentPayments.length > 0 ? (
               <p className="text-xs font-bold text-gray-700">
-                ₹{recentPayments[0].amount} from {recentPayments[0].customerName.split(' ')[0]}
+                ₹{recentPayments[0].paymentAmount} from {recentPayments[0].customerName.split(' ')[0]}
               </p>
             ) : (
               <p className="text-xs text-gray-400 italic">No recent payments</p>
@@ -271,7 +278,7 @@ const PaymentCollection: React.FC = () => {
                     <div className="font-bold text-gray-700">{p.customerName}</div>
                     <div className="text-[10px] text-gray-400">{p.date}</div>
                   </div>
-                  <div className="font-bold text-green-600">₹{p.amount}</div>
+                  <div className="font-bold text-green-600">₹{p.paymentAmount}</div>
                 </div>
               ))}
               {recentPayments.length === 0 && (

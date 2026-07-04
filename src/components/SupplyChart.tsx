@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Filter, Printer, FileSpreadsheet } from 'lucide-react';
-import { Customer, Transaction, CustomerStats, AppSettings } from '../types';
-import { getCustomers, getTransactions } from '../services/db';
+import { Customer, CustomerStats, AppSettings } from '../types';
+import { getCustomers, getAllCustomerStats, getSettings } from '../services/db';
 
 const SupplyChart: React.FC = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [transactions, setTransactions] = useState<Record<string, Transaction>>({});
   const [filterArea, setFilterArea] = useState<string>('');
   const [stats, setStats] = useState<Record<string, CustomerStats>>({});
   const [settings, setSettings] = useState<AppSettings>({
@@ -19,20 +18,14 @@ const SupplyChart: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const loadedCustomers = await getCustomers();
+      const [loadedCustomers, statsMap, settingsData] = await Promise.all([
+        getCustomers(),
+        getAllCustomerStats(),
+        getSettings(),
+      ]);
       setCustomers(loadedCustomers);
-      
-      const allTxs = await getTransactions();
-      const txs = allTxs.filter(t => t.date?.startsWith(date));
-      const txMap: Record<string, Transaction> = {};
-      txs.forEach(t => {
-        if (t.customerId) {
-          txMap[t.customerId] = t;
-        }
-      });
-      setTransactions(txMap);
-
-      setStats({});
+      setStats(statsMap);
+      setSettings(settingsData);
     };
     loadData();
   }, [date]);

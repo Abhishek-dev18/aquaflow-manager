@@ -89,7 +89,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
               </div>
            </div>
-           <h1 className="text-3xl font-black text-slate-800 tracking-tight">OM Pure Water</h1>
+           <h1 className="text-3xl font-black text-slate-800 tracking-tight">AquaFlow Manager</h1>
            <p className="text-slate-500 font-medium text-sm mt-2">Admin Portal</p>
         </div>
 

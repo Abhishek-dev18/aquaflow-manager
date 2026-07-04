@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Save, Trash2, Beaker, Users, CheckCircle } from 'lucide-react';
 import { getSettings, saveSettings, saveCustomersBulk, generateNextCustomerId, getCustomers, deleteCustomer, getAreas, getTransactions, deleteTransaction } from '../services/db';
 import { AppSettings, Customer } from '../types';
+import { showAlert } from '../lib/alert';
 
 export default function Settings() {
   const [formData, setFormData] = useState<AppSettings>({

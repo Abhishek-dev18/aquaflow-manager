@@ -17,7 +17,7 @@ import SupplyChart from './components/SupplyChart';
 import Analytics from './components/Analytics';
 import Login from './components/Login';
 import PaymentCollection from './components/PaymentCollection';
-import Alert, { AlertType, setAlertCallback, showAlert } from './components/Alert';
+import Alert, { AlertType, setAlertCallback } from './components/Alert';
 import { useAuth } from './lib/auth';
 import { logoutUser } from './lib/supabase';
 
@@ -94,8 +94,8 @@ const App: React.FC = () => {
       `}>
         <div className="h-16 flex items-center px-6 border-b border-gray-100 bg-white">
           <span className="text-xl font-bold text-brand-600 flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">O</div>
-            OM Pure Water
+            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">A</div>
+            AquaFlow Manager
           </span>
         </div>
         <div className="p-4 space-y-1 flex flex-col h-[calc(100%-4rem)] overflow-y-auto">

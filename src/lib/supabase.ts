@@ -88,7 +88,7 @@ export const isAuthenticated = async () => {
 export const onAuthStateChange = (
   callback: (isLoggedIn: boolean, session: any) => void
 ) => {
-  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
     callback(!!session, session);
   });
   
